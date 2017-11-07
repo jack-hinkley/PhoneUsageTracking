@@ -165,8 +165,10 @@ class PhonedataController extends Controller
 			->orwhere('clients.local', 'like', '%'.$search.'%')
 			->orderBy('invoices.invoice_date', 'desc')
 			->simplePaginate(50);
+
 			// ->get();
 	}
+	// changes
 
 	public function db_outstanding()
 	{
