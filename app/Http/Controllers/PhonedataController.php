@@ -79,21 +79,41 @@ class PhonedataController extends Controller
 		if($request->file('imported-file')){
 			$path = $request->file('imported-file')->getRealPath();
 			$data = Excel::load($path, function($reader) {})->get();
-			$this->upload_zones($data);
+			$data_array = $data->toArray();
+			//	Determine which sheet is being used and set the start of data collection
+			if(isset($data_array[0]['411_count'])) {
+				$zone = 'usage';
+				$start = 56;
+			}
+			else {
+				$zone = 'cost';
+				$start = 62;
+			}
+			$this->upload_zones($data, $zone, $start);
 			if(!empty($data) && $data->count()) {
 				foreach ($data->toArray() as $row) {
 					if(!empty($row)) {
-						$dataArray[] = [
-							'invoice_date' => $row['invoice_date'],
-							'device_type' => $row['device_type'],
-							'phone' => $row['mobile_number'],
-							'status' => $row['status'],
-							'domestic_data' => $row['on_device_domestic_data_mb'],
-							'tether_data' => $row['tether_domestic_data_mb'],
-							'total_data' => $row['total_domestic_data_mb'],
-							'created_at' => date('Y-m-d'),
-							'updated_at' => date('Y-m-d')
-						];
+						if($zone == 'usage'){
+							$dataArray[] = [
+								'invoice_date' => $row['invoice_date'],
+								'phone' => $row['mobile_number'],
+								'domestic_data' => $row['on_device_domestic_data_mb'],
+								'tether_data' => $row['tether_domestic_data_mb'],
+								'total_data' => $row['total_domestic_data_mb'],
+								'created_at' => date('Y-m-d'),
+								'updated_at' => date('Y-m-d')
+							];
+						} else {
+							$dataArray[] = [
+								'invoice_date' => $row['invoice_date'],
+								'phone' => $row['mobile_number'],
+								'total_domestic_data_charges' => $row['total_domestic_data_charges'],
+								'tether_domestic_data_charges' => $row['tether_domestic_data_charges'],
+								'total_invoice' => $row['total_invoice'],
+								'created_at' => date('Y-m-d'),
+								'updated_at' => date('Y-m-d')
+							];
+						}
 					}
 				}
 				if(!empty($dataArray)) {
@@ -115,7 +135,7 @@ class PhonedataController extends Controller
 		foreach ($data as $key => $value) {
 			preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $value['phone'],  $matches );
 			$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>'.$overages[$key]['overage_cost'].'</td></tr>';
+			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$overages[$key]['overage_cost'].'</td></tr>';
 		}
 		$html .= '</table>';
 
@@ -128,6 +148,7 @@ class PhonedataController extends Controller
 	public function generatesearch(Request $request, $search)
 	{
 		$data = $this->db_search($search);
+		$overages = $this->calculateOverages($data);
 		$html = '
 			<h1>Phone Data</h1>
 				<table cellpadding="10">
@@ -135,7 +156,7 @@ class PhonedataController extends Controller
 		foreach ($data as $key => $value) {
 			preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $value['phone'],  $matches );
 			$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$0</td></tr>';
+			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$overages[$key]['overage_cost'].'</td></tr>';
 		}
 		$html .= '</table>';
 
@@ -152,6 +173,7 @@ class PhonedataController extends Controller
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
 			->where('invoices.invoice_date', '=', $date)
 			->where('clients.local', '=', $local)
+			->limit(250)
 			->get();
 	}
 
@@ -164,11 +186,9 @@ class PhonedataController extends Controller
 			->orwhere('members.phone', 'like', '%'.$search.'%')
 			->orwhere('clients.local', 'like', '%'.$search.'%')
 			->orderBy('invoices.invoice_date', 'desc')
-			->simplePaginate(50);
-
-			// ->get();
+			->limit(250)
+			->get();
 	}
-	// changes
 
 	public function db_outstanding()
 	{
@@ -243,7 +263,8 @@ class PhonedataController extends Controller
 	//						It will then check if there are any matches where there is a value
 	//	Params:		Takes an array of invoices from xlsx
 	//	Return:		Returns an array 
-	public function upload_zones($data, $zone){
+	public function upload_zones($data, $zone, $start)
+	{
 		$data_val = array();
 		foreach ($data as $key => $value) {
 			$date = substr((string)$value['invoice_date'], 0, 10);
@@ -251,8 +272,9 @@ class PhonedataController extends Controller
 			$count = 0;
 			foreach ($value as $key2 => $val) {
 				$count++;
-				if($count < 57) continue;
+				if($count <= $start) continue;
 				if(!empty($val) || $val != 0){
+					$key2 = str_replace('_&_', '_', $key2);
 					$data_row = [
 						'invoice_date' => $date,
 						'phone' => $phone,
@@ -262,10 +284,16 @@ class PhonedataController extends Controller
 				}
 			}
 		}
-		if($zone == 'usage')
-			Zones_usage::insert($data_row);
-		else 
-			Zones_cost::insert($data_row);
+		if($zone == 'usage'){
+			foreach ($data_val as $key => $value) {
+				Zones_usage::insert($value);	
+			}
+		}
+		else { 
+			foreach ($data_val as $key => $value) {
+				Zones_cost::insert($value);	
+			}
+		}
 	}
 
 }

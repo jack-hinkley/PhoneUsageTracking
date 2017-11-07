@@ -87,9 +87,9 @@
 		});
 		//	Change data based on query in search bar
 		$('#search-button').click(function(){
-			search = $('#search').val();
-			if(search.length < 1){
-				$(this).parent().after(`
+			search = ($('#search').val()).replace(/\s\s+/g, ' ');
+			if(search.length < 1 || search == ' '){
+				$(this).parent().find($('.warning-container')).html(`
 					<div class="alert alert-danger fade show" role="alert">
 						<button type="button" class="close" data-dismiss="alert" aria-label="Close">
 							<span aria-hidden="true">&times;</span>
@@ -187,10 +187,9 @@
 			method: "POST",
 			datatype: "json",
 			success: function(data){
-				console.log(data);
 				$('.data-container').html('');
 				var html = '';
-				$.each(data['invoices']['data'], function(key, val){	
+				$.each(data['invoices'], function(key, val){	
 					phone = format_phone(val['phone']);
 					html +=
 						`<div class="card hidden">
@@ -206,8 +205,7 @@
 									</div>
 								</div>
 							</div>
-						</div>
-						`
+						</div>`
 				});
 				//	Add results to page
 				$('.data-container').append(html);
