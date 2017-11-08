@@ -108,7 +108,7 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 
-				$this->upload_invoices($data_array, $zone);
+				if($zone == 'cost') $this->upload_invoices($data_array, $zone);
 				$this->upload_data($data_array, $zone);
 				$this->upload_zones($data_array, $zone);
 				
@@ -162,8 +162,17 @@ class PhonedataController extends Controller
 	//	DATABASE CALLS
 	public function db_get($date, $local)
 	{
-		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
+		return Invoices::select('invoices.*','members.*', 'clients.*','data_usage.total_domestic_data_mb')
+			->join('members', 'invoices.phone', '=', 'members.phone')
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->join('data_usage', function($join){
+				$join->on('invoices.phone', '=', 'data_usage.phone')
+				->on('invoices.invoice_date', '=', 'data_usage.invoice_date');
+			})
+			->join('data_cost', function($join){
+				$join->on('invoices.phone', '=', 'data_cost.phone')
+				->on('invoices.invoice_date', '=', 'data_cost.invoice_date');
+			})
 			->where('invoices.invoice_date', '=', $date)
 			->where('clients.local', '=', $local)
 			->limit(250)
@@ -212,20 +221,18 @@ class PhonedataController extends Controller
 		$cost = array();
 
 		//	Iterate through invoices based on the local and date, and add their total usage
-		foreach ($data as $key => $invoice) {
-			$total_data += intval($invoice->total_data);
-		}
+		foreach ($data as $key => $invoice)
+			$total_data += intval($invoice->total_domestic_data_mb);
 		//	If local is over on data calculate cost, else create array of 0's
 		if(sizeof($data) * $data_max < $total_data){
 			foreach ($data as $key => $invoice) {
-				$member_data = intval($invoice->total_data);
+				$member_data = intval($invoice->total_domestic_data_mb);
 				//	If the member uses more data than $data_max, calculate the additional fee
 				if($member_data > $data_max){
 					$value['overage_cost'] = round((($member_data - $data_max) * 0.02), 2);
 					$value['overage_data'] = round((($member_data - $data_max)), 2);
 					array_push($cost, $value);
-				}
-				else{
+				}	else {
 					$value['overage_cost'] = 0;
 					$value['overage_data'] = 0;
 					array_push($cost, $value);
@@ -315,10 +322,9 @@ class PhonedataController extends Controller
 				$count++;
 			}			
 		}
-		if ($zone == 'usage') Zones_zone::insert($data_master);
+		if ($zone == 'usage') Zones_usage::insert($data_master);
 		else Zones_cost::insert($data_master);
 	}
-
 
 	public function upload_blacklist($key_label)
 	{
