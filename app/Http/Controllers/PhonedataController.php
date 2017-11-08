@@ -103,13 +103,10 @@ class PhonedataController extends Controller
 									$data_cell = [$key => substr((string)$cell, 0, 10)];
 								else
 									$data_cell = [$key => $cell];
-								echo $key.'<br>';
 								//	Push cell data in row array
 								array_push($data_row, $data_cell);
 							}
-							
 						}
-						die;
 					}
 					// Push row into master data array
 					array_push($data_array, $data_row);
@@ -266,33 +263,46 @@ class PhonedataController extends Controller
 		})->export('xls');
 	}
 
-	public function upload_invoices($data, $zone)
+	public function upload_invoices($data_set, $zone)
 	{
-		$data_array = array(
-			'invoice_date' => $data['invoice_date'],
-			'phone' => $data['mobile_number']
-		);
-		if($zone == 'usage'){
-			array_push($data_arr, [
-				'total_data' => $data['']
-			]);
-		} else {
-			array_push($data_arr, [
-				'domestic_data' => $data[''], 
-				'domestic_data' => $data['']
-			]);
+		foreach ($data_set as $key => $data) {
+			$data_array = array(
+				'invoice_date' => $data[0]['invoice_date'],
+				'phone' => $data[1]['mobile_number'],
+				'created_at'=> date('Y-m-d'),
+				'updated_at'=> date('Y-m-d')
+			);
+			if($zone == 'usage')
+				$data_array['total_data'] = $data[14]['total_domestic_data_mb'];
+			// Invoices::insert($data_array);
 		}
-		
 	}
 
-	public function upload_data($data, $zone)
+	public function upload_data($data_set, $zone)
 	{
-		
+		if ($zone == 'usage') $start = 22;
+		else $start = 23;
+		foreach ($data_set as $data) {
+			$data_array = array();
+			foreach ($data as $key => $val) {
+				$keys = array_keys($data[$key]);
+				if($key < $start && $key > 1){
+					$data_array[$keys[0]] = $val[$keys[0]];
+				}
+			}
+			if ($zone == 'usage') Data_usage::insert($data_array);
+			else Data_cost::insert($data_array);
+		}
 	}
 
-	public function upload_zones($data, $zone)
+	public function upload_zones($data_set, $zone)
 	{
-		
+		foreach ($data_set as $key => $data) {
+			echo '<pre>';
+			var_dump($data);
+			echo '</pre>';
+			die;
+		}
 	}
 
 	//	Purpose:	The purpose of this function is to take the data from the spreadsheet, and decide which tables the data goes into
