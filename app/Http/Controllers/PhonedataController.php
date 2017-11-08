@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Invoices;
 use App\Clients;
+use App\Data_usage;
+use App\Data_cost;
 use App\Zones_usage;
 use App\Zones_cost;
 use App\Http\Controllers\Controller;
@@ -79,16 +81,12 @@ class PhonedataController extends Controller
 		if($request->file('imported-file')){
 			$path = $request->file('imported-file')->getRealPath();
 			$data = (Excel::load($path, function($reader) {})->get())->toArray();
-			//	Determine which sheet is being used and set the start of data collection
-			if(isset($data[0]['411_count'])) {
+			//	Determine which sheet is being used
+			if(isset($data[0]['411_count']))
 				$zone = 'usage';
-				$start = 56;
-			}	else {
+			else
 				$zone = 'cost';
-				$start = 62;
-			}
 			//	Handle inserts for other tables
-			// $this->upload_zones($data, $zone, $start);
 			$data_array = array();
 			if(!empty($data)) {
 				//	Iterate the spreadsheet by row
@@ -100,11 +98,9 @@ class PhonedataController extends Controller
 							//	Check cell name against the blacklisted cell names
 							if($this->upload_blacklist($key)){
 								if($key == 'invoice_date')
-									$data_cell = [$key => substr((string)$cell, 0, 10)];
-								else
-									$data_cell = [$key => $cell];
+									$cell = substr((string)$cell, 0, 10);
 								//	Push cell data in row array
-								array_push($data_row, $data_cell);
+								$data_row[$key] = $cell;
 							}
 						}
 					}
@@ -112,18 +108,11 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 
-				// echo "<pre>";
-				// var_dump($data_array);
-				// echo "</pre>";
-				// die;
-
 				$this->upload_invoices($data_array, $zone);
 				$this->upload_data($data_array, $zone);
 				$this->upload_zones($data_array, $zone);
-
-				if(!empty($data)) {
-					return back();
-				}
+				
+				return back();
 			}
 		}
 	}
@@ -265,91 +254,76 @@ class PhonedataController extends Controller
 
 	public function upload_invoices($data_set, $zone)
 	{
+		$data_master = array();
 		foreach ($data_set as $key => $data) {
 			$data_array = array(
-				'invoice_date' => $data[0]['invoice_date'],
-				'phone' => $data[1]['mobile_number'],
+				'invoice_date' => $data['invoice_date'],
+				'phone' => $data['mobile_number'],
 				'created_at'=> date('Y-m-d'),
 				'updated_at'=> date('Y-m-d')
 			);
 			if($zone == 'usage')
-				$data_array['total_data'] = $data[14]['total_domestic_data_mb'];
-			// Invoices::insert($data_array);
+				$data_array['total_data'] = $data['total_domestic_data_mb'];
+			array_push($data_master, $data_array);
 		}
+		Invoices::insert($data_master);
 	}
 
 	public function upload_data($data_set, $zone)
 	{
+		$data_master = array();
 		if ($zone == 'usage') $start = 22;
-		else $start = 23;
+		else $start = 20;
 		foreach ($data_set as $data) {
 			$data_array = array();
+			$data_array['invoice_date'] = $data['invoice_date'];
+			$data_array['phone'] = $data['mobile_number'];
+			$count = 0;
 			foreach ($data as $key => $val) {
-				$keys = array_keys($data[$key]);
-				if($key < $start && $key > 1){
-					$data_array[$keys[0]] = $val[$keys[0]];
+				if($count < $start && $count > 1){
+					$data_array[$key] = $val;
 				}
+				$count++;
 			}
-			if ($zone == 'usage') Data_usage::insert($data_array);
-			else Data_cost::insert($data_array);
+			array_push($data_master, $data_array);
 		}
+		if ($zone == 'usage') Data_usage::insert($data_master);
+		else Data_cost::insert($data_master);
 	}
 
 	public function upload_zones($data_set, $zone)
 	{
-		foreach ($data_set as $key => $data) {
-			echo '<pre>';
-			var_dump($data);
-			echo '</pre>';
-			die;
-		}
-	}
-
-	//	Purpose:	The purpose of this function is to take the data from the spreadsheet, and decide which tables the data goes into
-	//	Params:		Takes an array of invoices from xlsx, (string) the correct table to access, (int) where to start the search
-	//	Return:		None
-	public function upload_sort($data, $zone, $start)
-	{
-		$data_array = array();
-		foreach ($data as $key => $value) {
-			$date = substr((string)$value['invoice_date'], 0, 10);
-			$phone = (string)$value['mobile_number'];
+		$data_master = array();
+		if ($zone == 'usage') $start = 22;
+		else $start = 20;
+		foreach ($data_set as $data) {
+			$data_array = array();
+			$date = $data['invoice_date'];
+			$phone = $data['mobile_number'];
 			$count = 0;
-			foreach ($value as $key2 => $val) {
+			foreach ($data as $key => $val) {
+				if($count >= $start){
+					if(!empty($val) || $val != 0){
+						$data_row = [
+							'invoice_date' => $date,
+							'phone' => $phone,
+							$key => $val
+						];
+						array_push($data_master, $data_row);
+					}
+				}
 				$count++;
-				if($count <= $start) continue;
-				$data_array = $this->upload_zone_array_builder($val, $key2, $data_array);
-			}
+			}			
 		}
-		if($zone == 'usage'){
-			foreach ($data_array as $key => $value) {
-				// Zones_usage::insert($value);	
-			}
-		}
-		else { 
-			foreach ($data_array as $key => $value) {
-				// Zones_cost::insert($value);	
-			}
-		}
+		if ($zone == 'usage') Zones_zone::insert($data_master);
+		else Zones_cost::insert($data_master);
 	}
 
-	public function upload_zone_array_builder($data, $key, $data_array)
-	{
-		if(!empty($data) || $data != 0){
-			$key = str_replace('_&_', '_', $key);
-			$data_row = [
-				'invoice_date' => $date,
-				'phone' => $phone,
-				$key => $data
-			];
-			array_push($data_array, $data_row);
-		}
-	}
 
 	public function upload_blacklist($key_label)
 	{
 		$blacklist = array(
-			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','canada_to_canada_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_usa_long_distance_minutes','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes'
+			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges','canada_to_canada_long_distance_charges', 'canada_to_international_long_distance_charges','other_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_usa_long_distance_minutes','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes'
 		);
 		foreach ($blacklist as $key => $value) {
 			if($key_label == $value)
