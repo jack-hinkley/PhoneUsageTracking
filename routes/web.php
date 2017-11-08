@@ -23,18 +23,19 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('phonedata/download/{date}/{local}', 'PhonedataController@download');
 	Route::get('phonedata/downloadsearch/{search}', 'PhonedataController@downloadsearch');
 	Route::get('phonedata/generate/{date}/{local}', 'PhonedataController@generate');
-	Route::get('phonedata/generatesearch/{search}', 'PhonedataController@generatesearch');
 
 	Route::get('clients', 'ClientsController@index');
 	Route::get('clients/create', 'ClientsController@createindex');
 	Route::get('clients/edit/{id}', 'ClientsController@editindex');
 	Route::get('clients/delete/{id}', 'ClientsController@delete');
+	Route::get('clients/autocomplete',array('as'=>'autocomplete','uses'=>'ClientsController@autocomplete'));
 
 	Route::get('members', 'MembersController@index');
 	Route::get('members/create', 'MembersController@createindex');
 	Route::get('members/create/{phone}', 'MembersController@createphoneindex');
 	Route::get('members/edit/{id}', 'MembersController@editindex');
 	Route::get('members/delete/{id}', 'MembersController@delete');
+	Route::post('phonedata/search/{query}', 'PhonedataController@search');
 
 	// AJAX CALLS
 	Route::post('phonedata/get', 'PhonedataController@get');

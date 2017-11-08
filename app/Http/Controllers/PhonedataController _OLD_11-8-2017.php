@@ -78,53 +78,53 @@ class PhonedataController extends Controller
 	{
 		if($request->file('imported-file')){
 			$path = $request->file('imported-file')->getRealPath();
-			$data = (Excel::load($path, function($reader) {})->get())->toArray();
+			$data = Excel::load($path, function($reader) {})->get();
+			$data_array = $data->toArray();
 			//	Determine which sheet is being used and set the start of data collection
-			if(isset($data[0]['411_count'])) {
+			if(isset($data_array[0]['411_count'])) {
 				$zone = 'usage';
 				$start = 56;
-			}	else {
+			}
+			else {
 				$zone = 'cost';
 				$start = 62;
 			}
 			//	Handle inserts for other tables
-			// $this->upload_zones($data, $zone, $start);
-			$data_array = array();
-			if(!empty($data)) {
-				//	Iterate the spreadsheet by row
-				foreach ($data as $row) {
-					$data_row = array();
+			$this->upload_zones($data, $zone, $start);
+			if(!empty($data) && $data->count()) {
+				foreach ($data->toArray() as $row) {
 					if(!empty($row)) {
-						//	Iterate the row by cell
 						foreach ($row as $key => $cell) {
-							//	Check cell name against the blacklisted cell names
-							if($this->upload_blacklist($key)){
-								if($key == 'invoice_date')
-									$data_cell = [$key => substr((string)$cell, 0, 10)];
-								else
-									$data_cell = [$key => $cell];
-								echo $key.'<br>';
-								//	Push cell data in row array
-								array_push($data_row, $data_cell);
+							if($this->upload_blacklist($row)){
+
 							}
-							
 						}
-						die;
+						
+						// if($zone == 'usage'){
+						// 	$dataArray[] = [
+						// 		'invoice_date' => $row['invoice_date'],
+						// 		'phone' => $row['mobile_number'],
+						// 		'domestic_data' => $row['on_device_domestic_data_mb'],
+						// 		'tether_data' => $row['tether_domestic_data_mb'],
+						// 		'total_data' => $row['total_domestic_data_mb'],
+						// 		'created_at' => date('Y-m-d'),
+						// 		'updated_at' => date('Y-m-d')
+						// 	];
+						// } else {
+						// 	$dataArray[] = [
+						// 		'invoice_date' => $row['invoice_date'],
+						// 		'phone' => $row['mobile_number'],
+						// 		'total_domestic_data_charges' => $row['total_domestic_data_charges'],
+						// 		'tether_domestic_data_charges' => $row['tether_domestic_data_charges'],
+						// 		'total_invoice' => $row['total_invoice'],
+						// 		'created_at' => date('Y-m-d'),
+						// 		'updated_at' => date('Y-m-d')
+						// 	];
+						// }
 					}
-					// Push row into master data array
-					array_push($data_array, $data_row);
 				}
-
-				// echo "<pre>";
-				// var_dump($data_array);
-				// echo "</pre>";
-				// die;
-
-				$this->upload_invoices($data_array, $zone);
-				$this->upload_data($data_array, $zone);
-				$this->upload_zones($data_array, $zone);
-
-				if(!empty($data)) {
+				if(!empty($dataArray)) {
+					// Invoices::insert($dataArray);
 					return back();
 				}
 			}
@@ -266,35 +266,6 @@ class PhonedataController extends Controller
 		})->export('xls');
 	}
 
-	public function upload_invoices($data, $zone)
-	{
-		$data_array = array(
-			'invoice_date' => $data['invoice_date'],
-			'phone' => $data['mobile_number']
-		);
-		if($zone == 'usage'){
-			array_push($data_arr, [
-				'total_data' => $data['']
-			]);
-		} else {
-			array_push($data_arr, [
-				'domestic_data' => $data[''], 
-				'domestic_data' => $data['']
-			]);
-		}
-		
-	}
-
-	public function upload_data($data, $zone)
-	{
-		
-	}
-
-	public function upload_zones($data, $zone)
-	{
-		
-	}
-
 	//	Purpose:	The purpose of this function is to take the data from the spreadsheet, and decide which tables the data goes into
 	//	Params:		Takes an array of invoices from xlsx, (string) the correct table to access, (int) where to start the search
 	//	Return:		None
@@ -336,16 +307,13 @@ class PhonedataController extends Controller
 		}
 	}
 
-	public function upload_blacklist($key_label)
+	public function upload_blacklist($key)
 	{
-		$blacklist = array(
-			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','canada_to_canada_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_usa_long_distance_minutes','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes'
-		);
-		foreach ($blacklist as $key => $value) {
-			if($key_label == $value)
-				return false;
-		}
-		return true;
+		if($key == ''
+
+		)	
+		else
+			return true;
 	}
 
 }

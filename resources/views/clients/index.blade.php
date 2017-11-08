@@ -6,7 +6,17 @@
 			<h3 class="title pull-left">CLIENTS</h3>
 			<a href="clients/create" class="btn btn-success pull-right"><i class="fa fa-plus"></i>&nbsp Add Client</a>
 		</div><hr>
-		<div class="data-container"></div>
+		<form class="typeahead" role="search">
+			<div class="form-group">
+				<label for="search">Search</label>
+				<div class="input-group">
+					<input type="search" name="q" class="form-control typeahead " placeholder="Search" autocomplete="off">
+					<a class="btn btn-warning text-white input-group-addon" id="search-button" style="background-color: #f0ad4e" href="#"><i class="fa fa-search"></i>&nbsp Search</a>
+				</div>
+			</div>
+		</form>
+		<div class="data-container">
+		</div>
 	</div>
 </div>
 <script type="text/javascript">
@@ -16,6 +26,17 @@
 		//	Set token and data
 		var token = '<?php echo Session::token();?>';
 		get_clients(token);
+
+		//	TYPE AHEAD
+		var path = "/clients/autocomplete";
+		$('input.typeahead').typeahead({
+			source:  function (query, process) {
+			return $.get(path, { query: query }, function (data) {
+					return process(data);
+				});
+			}
+		});
+
 	});
 
 	//	Purpose: 	This function makes and ajax call that returns all clients in the system
@@ -61,8 +82,8 @@
 	//	Params: 	10 digit phone number
 	//	Returns: 	Formated phone number
 	function format_phone(phone) {
-	  var formated = phone.match(/^(\d{3})(\d{3})(\d{4})$/);
-	  return formated[1]+" "+formated[2]+" "+formated[3];
+		var formated = phone.match(/^(\d{3})(\d{3})(\d{4})$/);
+		return formated[1]+" "+formated[2]+" "+formated[3];
 	}
 </script>
 @endsection

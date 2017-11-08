@@ -33,7 +33,7 @@
 			<label for="search">Search</label>
 			<div class="input-group">
 				<input class="form-control" name="search" id="search">	
-				<a class="btn btn-warning text-white input-group-addon" id="search-button" style="background-color: #f0ad4e" href="#"><i class="fa fa-search"></i>&nbsp Search</a>			
+				<a class="btn btn-warning text-white input-group-addon" id="search-button" style="background-color: #f0ad4e" href="#"><i class="fa fa-search"></i>&nbsp Search</a>
 			</div>
 		</div>
 		<br>

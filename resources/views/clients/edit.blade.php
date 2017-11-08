@@ -14,7 +14,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="local">Local</label>
-							<input name="local" class="form-control" id="local" placeholder="Local" value="<?php echo $clients->local?>" required>
+							<input name="local" class="form-control" id="local" placeholder="Local" value="{{$clients->local}}" required>
 						</div>
 					</div>
 					<div class="col">
@@ -43,13 +43,13 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="address">Address</label>
-							<input name="address" class="form-control" id="address" placeholder="Address" value="<?php echo $clients->address?>" required>
+							<input name="address" class="form-control" id="address" placeholder="Address" value="{{$clients->address}}" required>
 						</div>
 					</div>
 					<div class="col">
 						<div class="form-group">
 							<label for="postal">Postal Code</label>
-							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="<?php echo $clients->postal?>" required>
+							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="{{$clients->postal}}" required>
 						</div>
 					</div>
 				</div>
@@ -65,7 +65,7 @@
 		$('form').attr('action', '/clients/edit/'+id);
 
 		$.each($('#province option'), function(key, val){
-			if($(val).val() == '<?php echo $clients->province?>')
+			if($(val).val() == '{{$clients->province}}')
 				$(val).attr('selected', 'selected');
 		});
 	});

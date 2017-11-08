@@ -9,9 +9,11 @@ use App\Http\Controllers\Controller;
 
 class ClientsController extends Controller
 {
+	//	USER ROUTES
 	public function index()
 	{
-		return view('clients.index');
+		$clients['clients'] = Clients::all();
+		return view('clients.index', ['clients' => $clients ]);
 	}
 
 	public function createindex(Request $request)
@@ -35,26 +37,13 @@ class ClientsController extends Controller
 
 	public function create(Request $request)
 	{
-		$client = new Clients;
-		$client->local = $request->input('local');
-		$client->address = $request->input('address');
-		$client->province = $request->input('province');
-		$client->postal = $request->input('postal');
-		$client->created_at = date('Y-m-d');
-		$client->updated_at = date('Y-m-d');
-		$client->save();
+		$this->db_create($request['local'], $request['address'], $request['province'], $request['postal']);
 		return redirect('/clients');
 	}
 
 	public function edit(Request $request, $id)
 	{
-		$client = Clients::find($id);
-		$client->local = $request->input('local');
-		$client->address = $request->input('address');
-		$client->province = $request->input('province');
-		$client->postal = $request->input('postal');
-		$client->updated_at = date('Y-m-d');
-		$client->save();
+		$this->db_create($id, $request['local'], $request['address'], $request['province'], $request['postal']);
 		return redirect('/clients');
 	}
 
@@ -62,5 +51,41 @@ class ClientsController extends Controller
 	{
 		Clients::find($id)->delete();
 		return redirect('/clients');
+	}
+
+	public function autocomplete(Request $request)
+	{
+		$data = $this->db_search($request->input('query'));
+		return response()->json($data);
+	}
+
+	//	DATABASE CALLS
+	public function db_create($local, $address, $province, $postal){
+		$client = new Clients;
+		$client->local = $local;
+		$client->address = $address;
+		$client->province = $province;
+		$client->postal = $postal;
+		$client->created_at = date('Y-m-d');
+		$client->updated_at = date('Y-m-d');
+		$client->save();
+	}
+
+	public function db_edit($id, $local, $address, $province, $postal){
+		$client = Clients::find($id);
+		$client->local = $local;
+		$client->address = $address;
+		$client->province = $province;
+		$client->postal = $postal;
+		$client->updated_at = date('Y-m-d');
+		$client->save();
+	}
+
+	public function db_search($search){
+		return Invoices::where('local', 'like', '%'.$search.'%')
+			->orwhere('address', 'like', '%'.$search.'%')
+			->orwhere('province', 'like', '%'.$search.'%')
+			->orwhere('postal', 'like', '%'.$search.'%')
+			->get();
 	}
 }
