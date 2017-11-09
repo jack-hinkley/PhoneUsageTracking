@@ -6,15 +6,7 @@
 			<h3 class="title pull-left">CLIENTS</h3>
 			<a href="clients/create" class="btn btn-success pull-right"><i class="fa fa-plus"></i>&nbsp Add Client</a>
 		</div><hr>
-		<form class="typeahead" role="search">
-			<div class="form-group">
-				<label for="search">Search</label>
-				<div class="input-group">
-					<input type="search" name="q" class="form-control typeahead " placeholder="Search" autocomplete="off">
-					<a class="btn btn-warning text-white input-group-addon" id="search-button" style="background-color: #f0ad4e" href="#"><i class="fa fa-search"></i>&nbsp Search</a>
-				</div>
-			</div>
-		</form>
+		
 		<div class="data-container">
 		</div>
 	</div>
@@ -27,25 +19,80 @@
 		var token = '<?php echo Session::token();?>';
 		get_clients(token);
 
+		//	Listener for when the user presses enter
+		$('#search-input').keypress(function(e){
+			if(e.which == 13)
+				$('#search-button').click();
+		});
+
+		//	Change data based on query in search bar
+		$('#search-button').click(function(){
+			search = $('#search-input').val();
+			search_clients(token, search);
+		});
+
 		//	TYPE AHEAD
-		var path = "/clients/autocomplete";
-		$('input.typeahead').typeahead({
+		var url = "clients/autocomplete";
+		$('#search-input').typeahead({
 			source:  function (query, process) {
-			return $.get(path, { query: query }, function (data) {
-					return process(data);
+			return $.get(url, { query: query }, function (data) {
+					var array = data.map(function(value) {
+						return value.local;
+					});
+					return process(array);
 				});
 			}
 		});
-
 	});
 
 	//	Purpose: 	This function makes and ajax call that returns all clients in the system
-	//	Params: 	CSRF token, selected date
+	//	Params: 	CSRF token
 	//	Returns: 	Array of all requested invoices
 	function get_clients(token) {
 		$.ajax({
 			url: "clients/get",
 			data: {_token: token},
+			method: "POST",
+			datatype: "json",
+			success: function(data){
+				if(!$('.search-input').length) 
+					generate_search(data);
+				$('.data-container').html('');
+				$.each(data['clients'], function(key, val){
+					$('.data-container').append(
+						`<div class="card">
+							<div class="card-header">${val['local']}
+								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
+								<a href="clients/edit/${val['client_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
+							</div>
+							<div class="card-body">
+								<div class="col-sm-12">
+									<div class="row">
+										<div class="col"><i class="fa fa-map-marker"></i>&nbsp&nbsp${val['address']}, ${val['province']}, ${val['postal']}</div>
+									</div>
+								</div>
+							</div>
+						</div>`
+					);
+				});
+			}, error: function(){
+				if(attempts < 5){
+					attempts++;
+					get_clients(token);
+				}
+				else 
+					$('.data-container').append('<h3>There was a problem connecting</h3>');
+			}
+		});
+	}
+
+	//	Purpose: 	This function makes and ajax call that returns all clients in the system
+	//	Params: 	CSRF token, local search
+	//	Returns: 	Array of all requested invoices
+	function search_clients(token, search) {
+		$.ajax({
+			url: "clients/search",
+			data: {_token: token, search: search},
 			method: "POST",
 			datatype: "json",
 			success: function(data){
@@ -76,6 +123,25 @@
 					$('.data-container').append('<h3>There was a problem connecting</h3>');
 			}
 		});
+	}
+
+	function generate_search(data){
+		var html;
+		$.each(data['clients'], function(key, val){ 
+			html += `<option value="${val['local']}">${val['local']}</option>`; 
+		});
+		$('.data-container').before(
+			`<div class="form-group">
+				<label for="search">Search</label>
+				<div class="input-group">
+					<input class="form-control" id="search-input" list="search-list" autocomplete="off" placeholder="Search">
+					<datalist id="search-list">
+					${ html }
+					</datalist>
+					<button class="btn btn-warning text-white input-group-addon" id="search-button" style="background-color: #f0ad4e"><i class="fa fa-search"></i>&nbsp Search</button>
+				</div>
+			</div>`
+		);
 	}
 
 	//	Purpose: 	This function takes a 10 digit phone number and formats it to be reader friendly

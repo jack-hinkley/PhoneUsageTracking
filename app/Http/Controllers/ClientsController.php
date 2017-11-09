@@ -27,11 +27,16 @@ class ClientsController extends Controller
 		return view('clients.edit', ['clients' => $clients]);
 	}
 
-
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
 		$clients['clients'] = Clients::all();
+		return $clients;
+	}
+
+	public function search(Request $request)
+	{
+		$clients['clients'] = $this->db_search($request['search']);
 		return $clients;
 	}
 
@@ -55,7 +60,9 @@ class ClientsController extends Controller
 
 	public function autocomplete(Request $request)
 	{
-		$data = $this->db_search($request->input('query'));
+		$data = Clients::select("local")
+			->where("local","LIKE","%{$request->input('query')}%")
+			->get();
 		return response()->json($data);
 	}
 
@@ -82,7 +89,7 @@ class ClientsController extends Controller
 	}
 
 	public function db_search($search){
-		return Invoices::where('local', 'like', '%'.$search.'%')
+		return Clients::where('local', 'like', '%'.$search.'%')
 			->orwhere('address', 'like', '%'.$search.'%')
 			->orwhere('province', 'like', '%'.$search.'%')
 			->orwhere('postal', 'like', '%'.$search.'%')

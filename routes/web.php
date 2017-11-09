@@ -20,6 +20,7 @@ Route::group(['middleware' => ['auth']], function() {
 	//	USER ROUTES
 	Route::get('phonedata', 'PhonedataController@index');
 	Route::get('phonedata/outstanding', 'PhonedataController@outstandingindex');
+	Route::get('phonedata/details/{id}', 'PhonedataController@detailsindex');
 	Route::get('phonedata/download/{date}/{local}', 'PhonedataController@download');
 	Route::get('phonedata/downloadsearch/{search}', 'PhonedataController@downloadsearch');
 	Route::get('phonedata/generate/{date}/{local}', 'PhonedataController@generate');
@@ -44,6 +45,7 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::post('phonedata/generate', 'PhonedataController@generatereport');
 
 	Route::post('clients/get', 'ClientsController@get');
+	Route::post('clients/search', 'ClientsController@search');
 	Route::post('clients/create', 'ClientsController@create');
 	Route::post('clients/edit/{id}', 'ClientsController@edit');
 
