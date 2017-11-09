@@ -30,19 +30,6 @@
 			search = $('#search-input').val();
 			search_clients(token, search);
 		});
-
-		//	TYPE AHEAD
-		var url = "clients/autocomplete";
-		$('#search-input').typeahead({
-			source:  function (query, process) {
-			return $.get(url, { query: query }, function (data) {
-					var array = data.map(function(value) {
-						return value.local;
-					});
-					return process(array);
-				});
-			}
-		});
 	});
 
 	//	Purpose: 	This function makes and ajax call that returns all clients in the system

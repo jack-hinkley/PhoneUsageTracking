@@ -89,10 +89,6 @@ class ClientsController extends Controller
 	}
 
 	public function db_search($search){
-		return Clients::where('local', 'like', '%'.$search.'%')
-			->orwhere('address', 'like', '%'.$search.'%')
-			->orwhere('province', 'like', '%'.$search.'%')
-			->orwhere('postal', 'like', '%'.$search.'%')
-			->get();
+		return Clients::where('local', 'like', '%'.$search.'%')->get();
 	}
 }

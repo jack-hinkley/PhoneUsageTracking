@@ -50,6 +50,8 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::post('clients/edit/{id}', 'ClientsController@edit');
 
 	Route::post('members/get', 'MembersController@get');
+	Route::post('members/getall', 'MembersController@getAll');
+	Route::post('members/search', 'MembersController@search');
 	Route::post('members/create', 'MembersController@create');
 	Route::post('members/edit/{id}', 'MembersController@edit');
 	

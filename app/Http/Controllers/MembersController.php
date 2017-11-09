@@ -45,6 +45,25 @@ class MembersController extends Controller
 		return $members;
 	}
 
+	public function getall(Request $request)
+	{
+		$members['members'] = Members::select('first_name', 'last_name')->get();
+		return $members;
+	}
+
+	public function search(Request $request)
+	{
+		if(strpos($request['search'], ' ')){
+			$first_name = explode(' ', $request['search'])[0];
+			$last_name = explode(' ', $request['search'])[1];
+		} else {
+			$first_name = $request['search'];
+			$last_name = $request['search'];
+		}
+		$members['members'] = $this->db_search($first_name, $last_name);
+		return $members;
+	}	
+
 	public function create(Request $request)
 	{
 		$phone = str_replace(' ','',$request->input('phone'));
@@ -92,6 +111,15 @@ class MembersController extends Controller
 	{
 		Members::find($id)->delete();
 		return redirect('/members');
+	}
+
+	// DATABASE CALLS
+	public function db_search($first_name, $last_name)
+	{
+		return Members::join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('members.first_name', 'like', '%'.$first_name.'%')
+			->orwhere('members.first_name', 'like', '%'.$last_name.'%')
+			->get();
 	}
 
 }
