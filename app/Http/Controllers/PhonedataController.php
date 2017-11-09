@@ -108,10 +108,10 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 
-				if($zone == 'cost') $this->upload_invoices($data_array, $zone);
-				$this->upload_data($data_array, $zone);
-				$this->upload_zones($data_array, $zone);
-				
+				// $this->upload_data($data_array, $zone);
+				// $this->upload_zones($data_array, $zone);
+				if($zone == 'usage') $this->upload_invoices($data_array, $zone);
+
 				return back();
 			}
 		}
@@ -162,17 +162,18 @@ class PhonedataController extends Controller
 	//	DATABASE CALLS
 	public function db_get($date, $local)
 	{
-		return Invoices::select('invoices.*','members.*', 'clients.*','data_usage.total_domestic_data_mb')
+		// return Invoices::select('invoices.*','members.*', 'clients.*','data_usage.total_domestic_data_mb')
+		return Invoices::select('*')
 			->join('members', 'invoices.phone', '=', 'members.phone')
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
-			->join('data_usage', function($join){
-				$join->on('invoices.phone', '=', 'data_usage.phone')
-				->on('invoices.invoice_date', '=', 'data_usage.invoice_date');
-			})
-			->join('data_cost', function($join){
-				$join->on('invoices.phone', '=', 'data_cost.phone')
-				->on('invoices.invoice_date', '=', 'data_cost.invoice_date');
-			})
+			// ->join('data_usage', function($join){
+			// 	$join->on('invoices.phone', '=', 'data_usage.phone')
+			// 	->on('invoices.invoice_date', '=', 'data_usage.invoice_date');
+			// })
+			// ->join('data_cost', function($join){
+			// 	$join->on('invoices.phone', '=', 'data_cost.phone')
+			// 	->on('invoices.invoice_date', '=', 'data_cost.invoice_date');
+			// })
 			->where('invoices.invoice_date', '=', $date)
 			->where('clients.local', '=', $local)
 			->limit(250)
@@ -208,6 +209,73 @@ class PhonedataController extends Controller
 			->get();
 	}
 
+	public function db_all_usage($phone, $date)
+	{
+		//	IM SORRY THERE WAS NO OTHER WAY
+		$data = Data_usage::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->sum(
+				'data_usage.on_device_domestic_data_mb',
+				'data_usage.tether_domestic_data_mb',
+				'data_usage.total_domestic_data_mb',
+				'data_usage.usa_data_roaming_mb',
+				'data_usage.international_data_usage_mb',
+				'data_usage.total_roaming_data',
+				'data_usage.on_device_domestic_data_mb'
+				);
+
+		$zone = Zones_usage::where('phone', '=', $phone)
+		->where('invoice_date', '=', $date)
+		->sum(
+			'zones_usage.zone_1_data_usage_mb',
+			'zones_usage.zone_2_data_usage_mb',
+			'zones_usage.zone_3_data_usage_mb',
+			'zones_usage.zone_1_netherlands_antilles_data_usage',
+			'zones_usage.zone_1_austria_data_usage',
+			'zones_usage.zone_1_barbados_data_usage',
+			'zones_usage.zone_1_belgium_data_usage',
+			'zones_usage.zone_1_bahamas_data_usage',
+			'zones_usage.zone_1_switzerland_data_usage',
+			'zones_usage.zone_1_cyprus_data_usage',
+			'zones_usage.zone_1_germany_data_usage',
+			'zones_usage.zone_1_denmark_data_usage',
+			'zones_usage.zone_1_dominican_republic_data_usage',
+			'zones_usage.zone_1_spain_data_usage',
+			'zones_usage.zone_1_france_data_usage',
+			'zones_usage.zone_1_united_kingdom_data_usage',
+			'zones_usage.zone_1_gibraltar_data_usage',
+			'zones_usage.zone_1_guadeloupe_data_usage',
+			'zones_usage.zone_1_greece_data_usage',
+			'zones_usage.zone_1_hong_kong_data_usage',
+			'zones_usage.zone_1_croatia_data_usage',
+			'zones_usage.zone_1_hungary_data_usage',
+			'zones_usage.zone_1_ireland_data_usage',
+			'zones_usage.zone_1_iceland_data_usage',
+			'zones_usage.zone_1_italy_data_usage',
+			'zones_usage.zone_1_jamaica_data_usage',
+			'zones_usage.zone_1_monaco_data_usage',
+			'zones_usage.zone_1_montenegro_data_usage',
+			'zones_usage.zone_1_mexico_data_usage',
+			'zones_usage.zone_1_netherlands_data_usage',
+			'zones_usage.zone_1_norway_data_usage',
+			'zones_usage.zone_1_new_zealand_data_usage',
+			'zones_usage.zone_1_portugal_data_usage',
+			'zones_usage.zone_1_sweden_data_usage',
+			'zones_usage.zone_1_serbia_data_usage',
+			'zones_usage.zone_1_sint_maarten_data_usage',
+			'zones_usage.zone_1_turks_caicos_islands_data_usage',
+			'zones_usage.zone_1_british_virgin_islands_data_usage',
+			'zones_usage.zone_2_belize_data_usage',
+			'zones_usage.zone_2_costa_rica_data_usage',
+			'zones_usage.zone_2_honduras_data_usage',
+			'zones_usage.zone_2_india_data_usage',
+			'zones_usage.zone_2_cambodia_data_usage',
+			'zones_usage.zone_2_thailand_data_usage'
+		);
+
+		return intval($data) + intval($zone);
+	}
+
 	//	REUSABLE FUNCTIONS
 
 	//	Purpose:	The purpose of this function is to calculate all charges based on the given dataset
@@ -222,11 +290,11 @@ class PhonedataController extends Controller
 
 		//	Iterate through invoices based on the local and date, and add their total usage
 		foreach ($data as $key => $invoice)
-			$total_data += intval($invoice->total_domestic_data_mb);
+			$total_data += intval($invoice->total_data);
 		//	If local is over on data calculate cost, else create array of 0's
 		if(sizeof($data) * $data_max < $total_data){
 			foreach ($data as $key => $invoice) {
-				$member_data = intval($invoice->total_domestic_data_mb);
+				$member_data = intval($invoice->total_data);
 				//	If the member uses more data than $data_max, calculate the additional fee
 				if($member_data > $data_max){
 					$value['overage_cost'] = round((($member_data - $data_max) * 0.02), 2);
@@ -269,8 +337,7 @@ class PhonedataController extends Controller
 				'created_at'=> date('Y-m-d'),
 				'updated_at'=> date('Y-m-d')
 			);
-			if($zone == 'usage')
-				$data_array['total_data'] = $data['total_domestic_data_mb'];
+			$data_array['total_data'] = $this->db_all_usage($data['mobile_number'], $data['invoice_date']);
 			array_push($data_master, $data_array);
 		}
 		Invoices::insert($data_master);

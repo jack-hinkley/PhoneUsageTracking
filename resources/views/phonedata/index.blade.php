@@ -149,7 +149,7 @@
 								<div class="col-sm-12">
 									<div class="row">
 										<div class="col"><i class="fa fa-phone"></i>&nbsp&nbsp${phone}</div>
-										<div class="col"><i class="fa fa-database"></i>&nbsp&nbsp${val['total_domestic_data_mb']}MB</div>
+										<div class="col"><i class="fa fa-database"></i>&nbsp&nbsp${val['total_data']}MB</div>
 										<div class="col"><i class="fa fa-building-o"></i>&nbsp&nbsp${val['local']}</div>
 										<div class="col"><i class="fa fa-usd"></i>&nbsp&nbsp$${data['overages'][key]['overage_cost']}</div>
 									</div>
