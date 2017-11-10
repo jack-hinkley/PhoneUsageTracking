@@ -35,7 +35,9 @@ class PhonedataController extends Controller
 
 	public function detailsindex(Request $request, $id)
 	{
-		$invoices['invoice'] = $this->db_get_id($id);
+		$invoices['invoices'] = $this->db_get_id($id)[0];
+		$invoices['zone_usage'] = $this->db_all_zone_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
+		$invoices['data_usage'] = $this->db_all_data_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
 		return view('phonedata.details', ['invoice' => $invoices]);
 	}
 
@@ -130,8 +132,8 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 
-				// $this->upload_data($data_array, $zone);
-				// $this->upload_zones($data_array, $zone);
+				$this->upload_data($data_array, $zone);
+				$this->upload_zones($data_array, $zone);
 				if($zone == 'usage') $this->upload_invoices($data_array, $zone);
 
 				return back();
@@ -142,7 +144,7 @@ class PhonedataController extends Controller
 	public function generate(Request $request, $date, $local)
 	{
 		$data = $this->db_get($date, $local);
-		$overages = $this->calculateOverages($data);
+		$overages = $this->calculateOverages($data, $local);
 		$html = '
 			<h1>Phone Data</h1>
 				<table cellpadding="10">
@@ -184,7 +186,6 @@ class PhonedataController extends Controller
 	//	DATABASE CALLS
 	public function db_get($date, $local)
 	{
-		// return Invoices::select('invoices.*','members.*', 'clients.*','data_usage.total_domestic_data_mb')
 		return Invoices::select('*')
 			->join('members', 'invoices.phone', '=', 'members.phone')
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
@@ -316,6 +317,20 @@ class PhonedataController extends Controller
 		return intval($data) + intval($zone);
 	}
 
+	public function db_all_zone_usage($phone, $date)
+	{
+		return Zones_usage::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->get();
+	}
+
+	public function db_all_data_usage($phone, $date)
+	{
+		return Data_usage::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->get();
+	}
+
 	//	REUSABLE FUNCTIONS
 
 	//	Purpose:	The purpose of this function is to calculate all charges based on the given dataset
@@ -326,13 +341,15 @@ class PhonedataController extends Controller
 		//	Init variables
 		$total_data = 0;
 		$data_max = 3072;
+		$group_data = sizeof($data) * $data_max;
 		$cost = array();
 
 		//	Iterate through invoices based on the local and date, and add their total usage
 		foreach ($data as $key => $invoice)
 			$total_data += intval($invoice->total_data);
+		
 		//	If local is over on data calculate cost, else create array of 0's
-		if(sizeof($data) * $data_max < $total_data){
+		if($group_data < $total_data){
 			foreach ($data as $key => $invoice) {
 				$member_data = intval($invoice->total_data);
 				//	If the member uses more data than $data_max, calculate the additional fee
@@ -407,7 +424,6 @@ class PhonedataController extends Controller
 
 	public function upload_zones($data_set, $zone)
 	{
-		$data_master = array();
 		if ($zone == 'usage') $start = 22;
 		else $start = 20;
 		foreach ($data_set as $data) {
@@ -416,21 +432,18 @@ class PhonedataController extends Controller
 			$phone = $data['mobile_number'];
 			$count = 0;
 			foreach ($data as $key => $val) {
-				if($count >= $start){
-					if(!empty($val) || $val != 0){
-						$data_row = [
-							'invoice_date' => $date,
-							'phone' => $phone,
-							$key => $val
-						];
-						array_push($data_master, $data_row);
-					}
+				if($count >= $start && $val != 0) {					
+					$data_row = [
+						'invoice_date' => $date,
+						'phone' => $phone,
+						$key => $val
+					];
+					if ($zone == 'usage') Zones_usage::insert($data_row);
+					else Zones_cost::insert($data_row);
 				}
 				$count++;
-			}			
+			}
 		}
-		if ($zone == 'usage') Zones_usage::insert($data_master);
-		else Zones_cost::insert($data_master);
 	}
 
 	public function upload_blacklist($key_label)
