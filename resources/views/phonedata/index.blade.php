@@ -144,7 +144,10 @@
 					phone = format_phone(val['phone']);
 					html +=
 						`<div class="card hidden">
-							<div class="card-header">${ val['first_name'] } ${val['last_name']}</div>
+							<div class="card-header">
+								${ val['first_name'] } ${val['last_name']}
+								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-info"></i>&nbsp Details</a>
+							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
 									<div class="row">

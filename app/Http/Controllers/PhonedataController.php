@@ -33,6 +33,12 @@ class PhonedataController extends Controller
 		return view('phonedata.outstanding', ['outstanding' => $invoices]);
 	}
 
+	public function detailsindex(Request $request, $id)
+	{
+		$invoices['invoice'] = $this->db_get_id($id);
+		return view('phonedata.details', ['invoice' => $invoices]);
+	}
+
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
@@ -43,7 +49,23 @@ class PhonedataController extends Controller
 
 	public function search(Request $request)
 	{
-		$invoices['invoices'] = $this->db_search($request['search']);
+		if(strpos($request['search'], ' ')){
+			if(is_numeric(str_replace(' ', '', $request['search']))){
+				$search = str_replace(' ', '', $request['search']);
+				$invoices['invoices'] = $this->db_search($search);
+			} else {
+				$first_name = explode(' ', $request['search'])[0];
+				$last_name = explode(' ', $request['search'])[1];
+				$invoices['invoices'] = $this->db_search_name($first_name, $last_name);
+				if(sizeof($invoices['invoices']) == 0){
+					$invoices['invoices'] = $this->db_search($first_name);
+					if(sizeof($invoices['invoices']) == 0)
+						$invoices['invoices'] = $this->db_search($last_name);
+				}
+			}
+		} else {
+			$invoices['invoices'] = $this->db_search($request['search']);
+		}
 		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
 		return $invoices;
 	}
@@ -62,7 +84,7 @@ class PhonedataController extends Controller
 		$this->export($data);
 	}
 
-	public function downloadsearch(Request $request, $search )
+	public function downloadsearch(Request $request, $search)
 	{
 		$invoices['invoices'] = $this->db_search($request['search']);
 		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
@@ -180,6 +202,14 @@ class PhonedataController extends Controller
 			->get();
 	}
 
+	public function db_get_id($id)
+	{
+		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('invoices.invoice_id', '=', $id)
+			->get();
+	}
+
 	public function db_search($search)
 	{
 		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
@@ -189,6 +219,16 @@ class PhonedataController extends Controller
 			->orwhere('members.phone', 'like', '%'.$search.'%')
 			->orwhere('clients.local', 'like', '%'.$search.'%')
 			->orderBy('invoices.invoice_date', 'desc')
+			->limit(250)
+			->get();
+	}
+
+	public function db_search_name($first_name, $last_name)
+	{
+		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('members.first_name', 'like', '%'.$first_name.'%')
+			->where('members.last_name', 'like', '%'.$last_name.'%')
 			->limit(250)
 			->get();
 	}

@@ -29,7 +29,6 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('clients/create', 'ClientsController@createindex');
 	Route::get('clients/edit/{id}', 'ClientsController@editindex');
 	Route::get('clients/delete/{id}', 'ClientsController@delete');
-	Route::get('clients/autocomplete',array('as'=>'autocomplete','uses'=>'ClientsController@autocomplete'));
 
 	Route::get('members', 'MembersController@index');
 	Route::get('members/create', 'MembersController@createindex');

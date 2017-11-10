@@ -53,14 +53,24 @@ class MembersController extends Controller
 
 	public function search(Request $request)
 	{
-		if(strpos($request['search'], ' ')){
-			$first_name = explode(' ', $request['search'])[0];
-			$last_name = explode(' ', $request['search'])[1];
+		if(strpos($request['search'], ' ')) {
+			if(is_numeric(str_replace(' ', '', $request['search']))) {
+				$search = str_replace(' ', '', $request['search']);
+				$members['members'] = $this->db_search($search);
+			} else {
+				$first_name = explode(' ', $request['search'])[0];
+				$last_name = explode(' ', $request['search'])[1];
+				$members['members'] = $this->db_search_name($first_name, $last_name);
+				if(sizeof($members['members']) == 0)
+					$members['members'] = $this->db_search($first_name);
+					if(sizeof($members['members']) == 0)
+						$members['members'] = $this->db_search($last_name);
+						if(sizeof($members['members']) == 0)
+							$members['members'] = $this->db_search($request['search']);
+			}
 		} else {
-			$first_name = $request['search'];
-			$last_name = $request['search'];
+			$members['members'] = $this->db_search($request['search']);
 		}
-		$members['members'] = $this->db_search($first_name, $last_name);
 		return $members;
 	}	
 
@@ -114,7 +124,22 @@ class MembersController extends Controller
 	}
 
 	// DATABASE CALLS
-	public function db_search($first_name, $last_name)
+	public function db_search($search)
+	{
+		return Members::join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('members.first_name', 'like', '%'.$search.'%')
+			->orwhere('members.last_name', 'like', '%'.$search.'%')
+			->orwhere('members.phone', 'like', '%'.$search.'%')
+			->orwhere('members.email', 'like', '%'.$search.'%')
+			->orwhere('members.mobile', 'like', '%'.$search.'%')
+			->orwhere('members.address', 'like', '%'.$search.'%')
+			->orwhere('members.postal', 'like', '%'.$search.'%')
+			->orwhere('members.birthday', 'like', '%'.$search.'%')
+			->orwhere('clients.local', 'like', '%'.$search.'%')
+			->get();
+	}
+
+	public function db_search_name($first_name, $last_name)
 	{
 		return Members::join('clients', 'members.client_id', '=', 'clients.client_id')
 			->where('members.first_name', 'like', '%'.$first_name.'%')
