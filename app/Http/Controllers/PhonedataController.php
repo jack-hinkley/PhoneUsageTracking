@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Invoices;
 use App\Clients;
+use App\Members;
 use App\Data_usage;
 use App\Data_cost;
 use App\Zones_usage;
@@ -38,14 +39,16 @@ class PhonedataController extends Controller
 		$invoices['invoices'] = $this->db_get_id($id)[0];
 		$invoices['zone_usage'] = $this->db_all_zone_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
 		$invoices['data_usage'] = $this->db_all_data_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
+		$invoices['data_cost'] = $this->total_data_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
+		$invoices['zone_cost'] = $this->db_all_zones_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
 		return view('phonedata.details', ['invoice' => $invoices]);
 	}
 
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
+		// $test = array();
 		$invoices['invoices'] = $this->db_get($request['date'], $request['local']);
-		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
 		return $invoices;
 	}
 
@@ -68,14 +71,12 @@ class PhonedataController extends Controller
 		} else {
 			$invoices['invoices'] = $this->db_search($request['search']);
 		}
-		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
 		return $invoices;
 	}
 
-	public function download(Request $request, $date, $local )
+	public function download(Request $request, $date, $local)
 	{
 		$invoices['invoices'] = $this->db_get($request['date'], $request['local']);
-		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
 		
 		$data = array();
 		foreach ($invoices['invoices']->toArray() as $key => $value) {
@@ -89,7 +90,6 @@ class PhonedataController extends Controller
 	public function downloadsearch(Request $request, $search)
 	{
 		$invoices['invoices'] = $this->db_search($request['search']);
-		$invoices['overages'] = $this->calculateOverages($invoices['invoices']);
 
 		$data = array();
 		foreach ($invoices['invoices']->toArray() as $key => $value) {
@@ -102,7 +102,7 @@ class PhonedataController extends Controller
 
 	public function upload(Request $request)
 	{
-		if($request->file('imported-file')){
+		if($request->file('imported-file')) {
 			$path = $request->file('imported-file')->getRealPath();
 			$data = (Excel::load($path, function($reader) {})->get())->toArray();
 			//	Determine which sheet is being used
@@ -110,6 +110,11 @@ class PhonedataController extends Controller
 				$zone = 'usage';
 			else
 				$zone = 'cost';
+
+			//	Check if cost file was uploaded first
+			// if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
+			// 	return view('phonedata.uploaderror');
+
 			//	Handle inserts for other tables
 			$data_array = array();
 			if(!empty($data)) {
@@ -131,11 +136,12 @@ class PhonedataController extends Controller
 					// Push row into master data array
 					array_push($data_array, $data_row);
 				}
-
-				$this->upload_data($data_array, $zone);
-				$this->upload_zones($data_array, $zone);
-				if($zone == 'usage') $this->upload_invoices($data_array, $zone);
-
+				
+				// $this->upload_data($data_array, $zone);
+				// $this->upload_zones($data_array, $zone);
+				if($zone == 'usage') {
+					$this->upload_invoices($data_array);
+				}
 				return back();
 			}
 		}
@@ -144,7 +150,6 @@ class PhonedataController extends Controller
 	public function generate(Request $request, $date, $local)
 	{
 		$data = $this->db_get($date, $local);
-		$overages = $this->calculateOverages($data, $local);
 		$html = '
 			<h1>Phone Data</h1>
 				<table cellpadding="10">
@@ -152,7 +157,7 @@ class PhonedataController extends Controller
 		foreach ($data as $key => $value) {
 			preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $value['phone'],  $matches );
 			$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$overages[$key]['overage_cost'].'</td></tr>';
+			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$value['total_invoice'].'</td></tr>';
 		}
 		$html .= '</table>';
 
@@ -165,7 +170,6 @@ class PhonedataController extends Controller
 	public function generatesearch(Request $request, $search)
 	{
 		$data = $this->db_search($search);
-		$overages = $this->calculateOverages($data);
 		$html = '
 			<h1>Phone Data</h1>
 				<table cellpadding="10">
@@ -181,6 +185,14 @@ class PhonedataController extends Controller
 		$dompdf->loadHtml($html);
 		$dompdf->render();
 		$dompdf->stream('invoice.pdf');
+	}
+
+	public function test($data)
+	{
+		echo '<pre>';
+		var_dump($data);
+		echo '</pre>';
+		die;
 	}
 
 	//	DATABASE CALLS
@@ -208,6 +220,21 @@ class PhonedataController extends Controller
 		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
 			->where('invoices.invoice_id', '=', $id)
+			->get();
+	}
+
+	public function db_get_local_size($local)
+	{
+		return Clients::where('local', '=', $local)
+			->join('members', 'clients.client_id', '=', 'members.client_id')
+			->count();
+	}
+
+	public function db_get_local_by_phone($phone)
+	{
+		return Members::select('clients.local', 'members.plan_data')
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('members.phone', '=', $phone)
 			->get();
 	}
 
@@ -248,6 +275,22 @@ class PhonedataController extends Controller
 			->distinct()
 			->orderBy('invoice_date', 'desc')
 			->get();
+	}
+
+	public function db_get_member_plan($phone)
+	{
+		return Members::select('members.plan_rate', 'members.plan_data')
+			->where('members.phone', '=', $phone)
+			->get()
+			->toArray()[0];
+	}
+
+	public function db_get_invoice($phone, $date)
+	{
+		return Invoices::where('invoices.phone', '=', $phone)
+			->where('invoices.invoice_date', '=', $date)
+			->get()
+			->toArray()[0];
 	}
 
 	public function db_all_usage($phone, $date)
@@ -313,8 +356,120 @@ class PhonedataController extends Controller
 			'zones_usage.zone_2_cambodia_data_usage',
 			'zones_usage.zone_2_thailand_data_usage'
 		);
-
 		return intval($data) + intval($zone);
+	}
+
+	public function db_all_cost($phone, $date)
+	{
+		//	IM SORRY THERE WAS NO OTHER WAY
+		$data = Data_cost::select('data_cost.rate_plan_charges', 'data_cost.total_roaming_charges')
+			->where('data_cost.phone', '=', $phone)
+			->where('data_cost.invoice_date', '=', $date)
+			->get()
+			->toArray()[0];
+
+		if(Members::where('members.phone', 'like', $phone)->count() > 0)
+			$rate =	$this->db_get_member_plan($phone);
+		else
+			$rate = 65;
+
+		$zone = Zones_cost::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->select(
+				'zones_cost.zone_1_voice_cost',
+				'zones_cost.zone_2_voice_cost',
+				'zones_cost.zone_3_voice_cost',
+				'zones_cost.zone_1_data_cost',
+				'zones_cost.zone_2_data_cost',
+				'zones_cost.zone_3_data_cost',
+				'zones_cost.zone_1_netherlands_antilles_voice_cost',
+				'zones_cost.zone_1_australia_voice_cost',
+				'zones_cost.zone_1_barbados_voice_cost',
+				'zones_cost.zone_1_belgium_voice_cost',
+				'zones_cost.zone_1_bahamas_voice_cost',
+				'zones_cost.zone_1_switzerland_voice_cost',
+				'zones_cost.zone_1_china_voice_cost',
+				'zones_cost.zone_1_cyprus_voice_cost',
+				'zones_cost.zone_1_germany_voice_cost',
+				'zones_cost.zone_1_denmark_voice_cost',
+				'zones_cost.zone_1_dominican_republic_voice_cost',
+				'zones_cost.zone_1_spain_voice_cost',
+				'zones_cost.zone_1_france_voice_cost',
+				'zones_cost.zone_1_united_kingdom_voice_cost',
+				'zones_cost.zone_1_gibraltar_voice_cost',
+				'zones_cost.zone_1_greece_voice_cost',
+				'zones_cost.zone_1_ireland_voice_cost',
+				'zones_cost.zone_1_italy_voice_cost',
+				'zones_cost.zone_1_jamaica_voice_cost',
+				'zones_cost.zone_1_monaco_voice_cost',
+				'zones_cost.zone_1_montenegro_voice_cost',
+				'zones_cost.zone_1_mexico_voice_cost',
+				'zones_cost.zone_1_netherlands_voice_cost',
+				'zones_cost.zone_1_new_zealand_voice_cost',
+				'zones_cost.zone_1_portugal_voice_cost',
+				'zones_cost.zone_1_serbia_voice_cost',
+				'zones_cost.zone_1_sint_maarten_voice_cost',
+				'zones_cost.zone_1_turks_caicos_islands_voice_cost',
+				'zones_cost.zone_2_belize_voice_cost',
+				'zones_cost.zone_2_india_voice_cost',
+				'zones_cost.zone_2_cambodia_voice_cost',
+				'zones_cost.zone_2_vietnam_voice_cost',
+				'zones_cost.zone_3_kenya_voice_cost',
+				'zones_cost.zone_1_netherlands_antilles_data_cost',
+				'zones_cost.zone_1_austria_data_cost',
+				'zones_cost.zone_1_barbados_data_cost',
+				'zones_cost.zone_1_belgium_data_cost',
+				'zones_cost.zone_1_bahamas_data_cost',
+				'zones_cost.zone_1_switzerland_data_cost',
+				'zones_cost.zone_1_cyprus_data_cost',
+				'zones_cost.zone_1_germany_data_cost',
+				'zones_cost.zone_1_denmark_data_cost',
+				'zones_cost.zone_1_dominican_republic_data_cost',
+				'zones_cost.zone_1_spain_data_cost',
+				'zones_cost.zone_1_france_data_cost',
+				'zones_cost.zone_1_united_kingdom_data_cost',
+				'zones_cost.zone_1_gibraltar_data_cost',
+				'zones_cost.zone_1_guadeloupe_data_cost',
+				'zones_cost.zone_1_greece_data_cost',
+				'zones_cost.zone_1_hong_kong_data_cost',
+				'zones_cost.zone_1_croatia_data_cost',
+				'zones_cost.zone_1_hungary_data_cost',
+				'zones_cost.zone_1_ireland_data_cost',
+				'zones_cost.zone_1_iceland_data_cost',
+				'zones_cost.zone_1_italy_data_cost',
+				'zones_cost.zone_1_jamaica_data_cost',
+				'zones_cost.zone_1_monaco_data_cost',
+				'zones_cost.zone_1_montenegro_data_cost',
+				'zones_cost.zone_1_mexico_data_cost',
+				'zones_cost.zone_1_netherlands_data_cost',
+				'zones_cost.zone_1_norway_data_cost',
+				'zones_cost.zone_1_new_zealand_data_cost',
+				'zones_cost.zone_1_portugal_data_cost',
+				'zones_cost.zone_1_sweden_data_cost',
+				'zones_cost.zone_1_serbia_data_cost',
+				'zones_cost.zone_1_sint_maarten_data_cost',
+				'zones_cost.zone_1_turks_caicos_islands_data_cost',
+				'zones_cost.zone_1_british_virgin_islands_data_cost',
+				'zones_cost.zone_2_belize_data_cost',
+				'zones_cost.zone_2_costa_rica_data_cost',
+				'zones_cost.zone_2_honduras_data_cost',
+				'zones_cost.zone_2_india_data_cost',
+				'zones_cost.zone_2_cambodia_data_cost',
+				'zones_cost.zone_2_thailand_data_cost'
+		)
+			->get()
+			->toArray();
+
+		$zone_cost = 0;
+		foreach ($zone as $value) {
+			foreach ($value as $key => $val) {
+				if($val == null || $key == 'phone' || $key == 'invoice_date' || $key == 'id') continue;
+					$zone_cost += $value[$key];	
+			}
+		}
+
+		$data_cost = $data['total_roaming_charges'] + $rate['plan_rate'];
+		return $data_cost + $zone_cost;
 	}
 
 	public function db_all_zone_usage($phone, $date)
@@ -331,50 +486,75 @@ class PhonedataController extends Controller
 			->get();
 	}
 
+	public function db_all_zones_cost($phone, $date)
+	{
+		return Zones_cost::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->get();
+	}
+
+	public function db_all_data_cost($phone, $date)
+	{
+		return Data_cost::where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->get();
+	}
+
 	//	REUSABLE FUNCTIONS
 
 	//	Purpose:	The purpose of this function is to calculate all charges based on the given dataset
-	//	Params:		Takes an array of invoices joined on members and clients
+	//	Params:		Takes an array of invoice data from the bell spreadsheet and an array of the locals information (total data used and allowed)
 	//	Return:		Returns an array of all costs that aligns with each given dataset
-	public function calculateOverages($data)
+	public function calculateInvoice($data, $locals)
 	{
-		//	Init variables
-		$total_data = 0;
-		$data_max = 3072;
-		$group_data = sizeof($data) * $data_max;
-		$cost = array();
-
-		//	Iterate through invoices based on the local and date, and add their total usage
-		foreach ($data as $key => $invoice)
-			$total_data += intval($invoice->total_data);
+		$phone = (string)$data['mobile_number'];
+		$date = $data['invoice_date'];
+		$other_cost = round($this->db_all_cost($phone, $date), 2);
+		$invoice_total = $other_cost;
 		
-		//	If local is over on data calculate cost, else create array of 0's
-		if($group_data < $total_data){
-			foreach ($data as $key => $invoice) {
-				$member_data = intval($invoice->total_data);
-				//	If the member uses more data than $data_max, calculate the additional fee
-				if($member_data > $data_max){
-					$value['overage_cost'] = round((($member_data - $data_max) * 0.02), 2);
-					$value['overage_data'] = round((($member_data - $data_max)), 2);
-					array_push($cost, $value);
-				}	else {
-					$value['overage_cost'] = 0;
-					$value['overage_data'] = 0;
-					array_push($cost, $value);
+		if(isset($data['local'])) {
+			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage'] ){
+				if($data['total_domestic_data_mb'] > $data['plan_data']) {
+					$data_overage = $data['total_domestic_data_mb'] - $data['plan_data'];
+					$data_overage_cost = $data_overage * 0.02;
+					$invoice_total_data = $other_cost + $data_overage_cost;
 				}
 			}
-		} else {
-			//	Create array of 0 based on number of invoices
-			for($i = 0; $i < sizeof($data); $i++){
-				$value['overage_cost'] = 0;
-				$value['overage_data'] = 0;
-				array_push($cost, $value);
-			}
 		}
-		//	Cost array aligns itself with the invoices array, use key to reference correct member
-		return $cost;
+
+		if(isset($invoice_total_data))
+			$invoice_total = $invoice_total_data;
+		
+		return round($invoice_total *= 1.13, 2);
 	}
 
+	public function total_data_cost($phone, $date)
+	{
+		$member = $this->db_get_member_plan($phone);
+		$invoice = $this->db_get_invoice($phone, $date);
+		$total_zones_cost = 0;
+		$zones = $this->db_all_zones_cost($phone, $date)->toArray();
+
+		$costs['plan_rate'] = $member['plan_rate'];
+		$costs['sub_total'] = $invoice['invoice_total'] / 1.13;
+		$costs['taxes'] = $invoice['invoice_total'] - $costs['sub_total'];
+		
+		if (sizeof($zones) > 0) {
+			foreach ($zones as $value) {
+				foreach ($value as $key => $val) {
+					if($val == null || $key == 'phone' || $key == 'invoice_date' || $key == 'id') continue;
+					$costs[$key] = $value[$key];
+					$total_zones_cost += $value[$key];	
+				}
+			}
+		}
+		$costs['total_usage_cost'] = $costs['sub_total'] - ($total_zones_cost + $costs['plan_rate']);
+		return $costs;
+	}
+
+	//	Purpose:	The purpose of this function export an excel file based on the given dataset
+	//	Params:		Takes an array of invoices joined on members and clients
+	//	Return:		Exports an XLS file to the users browser
 	public function export($data)
 	{
 		Excel::create('invoices', function($excel) use($data) {
@@ -384,22 +564,61 @@ class PhonedataController extends Controller
 		})->export('xls');
 	}
 
-	public function upload_invoices($data_set, $zone)
+	//	Purpose:	The purpose of this function is to insert data into the invoices table from the spreadsheet
+	//	Params:		Takes an array of invoices
+	//	Return:		None
+	public function upload_invoices($data_set)
 	{
 		$data_master = array();
+		$locals = array();
+
+		foreach ($data_set as $key => $value) {
+			$test = $this->db_get_local_by_phone($value['mobile_number'])->toArray();
+			if(isset($test[0]['local'])) {
+				$data_set[$key]['local'] = $test[0]['local'];
+				$data_set[$key]['plan_data'] = $test[0]['plan_data'];
+			}
+		}
+
+		//	Iterate through invoices and collect total usage and total allowed usage, store in locals array
+		foreach ($data_set as $key => $value) {
+			if(isset($value['local'])) {
+				if(isset($locals[$value['local']])) {
+					$locals[$value['local']]['allowed_usage'] = $locals[$value['local']]['allowed_usage'] + $value['plan_data'];
+					$locals[$value['local']]['total_usage'] = $locals[$value['local']]['total_usage'] + $value['total_domestic_data_mb'];
+				}	else {
+					$locals[$value['local']]['allowed_usage'] = $value['plan_data'];
+					$locals[$value['local']]['total_usage'] = $value['total_domestic_data_mb'];
+				}
+			}
+		}
+
 		foreach ($data_set as $key => $data) {
+			//	Calculate the total invoice price
+			$invoice_total = $this->calculateInvoice($data, $locals);
+
 			$data_array = array(
 				'invoice_date' => $data['invoice_date'],
 				'phone' => $data['mobile_number'],
+				'invoice_total' => $invoice_total,
+				'local' => null,
 				'created_at'=> date('Y-m-d'),
 				'updated_at'=> date('Y-m-d')
 			);
+
+			//	If the row has a local, add the local name to the invoice array
+			if(isset($data['local']))
+				$data_array['local'] = $data['local'];
+
 			$data_array['total_data'] = $this->db_all_usage($data['mobile_number'], $data['invoice_date']);
 			array_push($data_master, $data_array);
 		}
 		Invoices::insert($data_master);
 	}
 
+	//	Purpose:	The purpose of this function is to insert invoice data from the spreadsheet into the data_cost and data_usage table
+	//	Params:		Takes an array of invoices and the which spreadsheet is being used
+	//	Return:		None
 	public function upload_data($data_set, $zone)
 	{
 		$data_master = array();
@@ -422,6 +641,9 @@ class PhonedataController extends Controller
 		else Data_cost::insert($data_master);
 	}
 
+	//	Purpose:	The purpose of this function is to insert invoice data from the spreadsheet into the zone_usage and data_cost table
+	//	Params:		Takes an array of invoices and the which spreadsheet is being used
+	//	Return:		None
 	public function upload_zones($data_set, $zone)
 	{
 		if ($zone == 'usage') $start = 22;
@@ -446,6 +668,9 @@ class PhonedataController extends Controller
 		}
 	}
 
+	//	Purpose:	The purpose of this function is to compare the given key against the black listed items.
+	//	Params:		Takes a column name (string)
+	//	Return:		Returns true if there is no match, false if there is a match
 	public function upload_blacklist($key_label)
 	{
 		$blacklist = array(

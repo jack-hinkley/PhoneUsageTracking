@@ -109,6 +109,21 @@
 							</select>
 						</div>
 					</div>
+					<div class="col">
+						<div class="form-group">
+							<label for="plan_rate">Phone Plan Rate ($)</label>
+							<input name="plan_rate" class="form-control" id="plan_rate" value="65.00">
+						</div>
+					</div>
+					<div class="col">
+						<div class="form-group">
+							<label for="plan_data">Phone Plan Data</label>
+							<select class="form-control" name="plan_data" id="plan_data">
+								<option value="3072">3,072 MB</option>
+								<option value="6144">6,144 MB</option>
+							</select>
+						</div>
+					</div>
 				</div>
 				<input type="submit" class="btn btn-primary" value="Submit">
 			</div>
