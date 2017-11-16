@@ -35,7 +35,6 @@ class MembersController extends Controller
 		return view('members.edit', ['locals' => $locals, 'members' => $members]);
 	}
 
-
 	//	AJAX CALLS
 	public function get(Request $request)
 	{

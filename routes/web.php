@@ -23,7 +23,6 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('phonedata/details/{id}', 'PhonedataController@detailsindex');
 	Route::get('phonedata/download/{date}/{local}', 'PhonedataController@download');
 	Route::get('phonedata/downloadsearch/{search}', 'PhonedataController@downloadsearch');
-	Route::get('phonedata/generate/{date}/{local}', 'PhonedataController@generate');
 
 	Route::get('clients', 'ClientsController@index');
 	Route::get('clients/create', 'ClientsController@createindex');
@@ -35,13 +34,12 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('members/create/{phone}', 'MembersController@createphoneindex');
 	Route::get('members/edit/{id}', 'MembersController@editindex');
 	Route::get('members/delete/{id}', 'MembersController@delete');
-	Route::post('phonedata/search/{query}', 'PhonedataController@search');
 
 	// AJAX CALLS
 	Route::post('phonedata/get', 'PhonedataController@get');
 	Route::post('phonedata/search', 'PhonedataController@search');
 	Route::post('phonedata/upload', 'PhonedataController@upload');
-	Route::post('phonedata/generate', 'PhonedataController@generatereport');
+	Route::post('phonedata/search/{query}', 'PhonedataController@search');
 
 	Route::post('clients/get', 'ClientsController@get');
 	Route::post('clients/search', 'ClientsController@search');

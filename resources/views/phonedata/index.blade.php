@@ -3,17 +3,17 @@
 <div class="container">
 	<div class="content hidden">
 		<div class="page-header">
-			<h3 class="title pull-left">PHONE DATA</h3>
-			<a href="#" class="btn btn-success pull-right" data-toggle="modal" data-target="#uploadModal"><i class="fa fa-plus"></i>&nbsp Upload XLSX</a>
-			<a href="#" class="btn btn-info pull-right" id="download"><i class="fa fa-download"></i>&nbsp Download CSV</a>
-			<a href="#" class="btn btn-warning pull-right" id="generate"><i class="fa fa-refresh"></i>&nbsp Generate Report</a>
-		</div><hr>
+			<h3 class="title pull-left d-print-none">PHONE DATA</h3>
+			<a href="#" class="btn btn-success pull-right d-print-none" data-toggle="modal" data-target="#uploadModal"><i class="fa fa-plus"></i>&nbsp Upload XLSX</a>
+			<a href="#" class="btn btn-info pull-right d-print-none" id="download"><i class="fa fa-download"></i>&nbsp Download XLS</a>
+			<button class="btn btn-warning pull-right d-print-none" onclick="window.print()" id="generate"><i class="fa fa-refresh"></i>&nbsp Generate Report</button>
+		</div><hr class="d-print-none">
 		<?php 
 			if(sizeof($phonedata['outstanding']) > 0){
-				echo '<a href="phonedata/outstanding" class="btn btn-danger pull-right">'.sizeof($phonedata['outstanding']).' Outstanding Numbers</a><br>';
+				echo '<a href="phonedata/outstanding" class="btn btn-danger pull-right  d-print-none">'.sizeof($phonedata['outstanding']).' Outstanding Numbers</a><br>';
 			}
 		 ?>
-		<div class="form-group">
+		<div class="form-group d-print-none">
 			<label for="date-selector">Date</label>	
 			<select class="form-control" id="date-selector">
 				<?php foreach ($phonedata['dates'] as $key => $date){
@@ -21,7 +21,7 @@
 				} ?>
 			</select>
 		</div>
-		<div class="form-group">
+		<div class="form-group d-print-none">
 			<label for="local-selector">Local</label>	
 			<select class="form-control" id="local-selector">
 				<?php foreach ($phonedata['locals'] as $key => $local){
@@ -29,7 +29,7 @@
 				} ?>
 			</select>
 		</div>
-		<div class="form-group">
+		<div class="form-group d-print-none">
 			<label for="search">Search</label>
 			<div class="input-group">
 				<input class="form-control" name="search" id="search">	
@@ -107,12 +107,6 @@
 				$('#search-button').click();
 			}
 		});
-		$('#generate').click(function(){
-			if($('#search').val().length > 0)
-				window.location.replace('phonedata/generatesearch/'+$('#search').val());
-			else
-				window.location.replace('phonedata/generate/'+date+'/'+local);
-		});
 		//	Download CSV based on the current results
 		$('#download').click(function(){
 			if($('#search').val().length > 0)
@@ -136,6 +130,11 @@
 			datatype: "json",
 			success: function(data){
 				$('.data-container').html('');
+				var total_cost = 0;
+				$.each(data['invoices'], function(key, val){
+					total_cost += parseFloat(val['invoice_total']);
+				});
+				$('.data-container').prepend(`<div class="d-print-block"><h1><div></div>INVOICE TOTAL<div class="pull-right">$${total_cost}</div></h1></div>`);
 				if(data['invoices'].length == 0)
 					$('.data-container').append('<h3 class="text-muted" style="width: 100%; text-align: center; opacity:0">There are no search results</h3>')
 					.fadeIn("slow", function(){ $('.text-muted').animate({'opacity': '1'})});
@@ -146,7 +145,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
@@ -198,7 +197,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">

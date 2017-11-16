@@ -114,7 +114,7 @@
 							<label for="plan_rate">Phone Plan Rate ($)</label>
 							<input name="plan_rate" class="form-control" id="plan_rate" value="65.00">
 						</div>
-					</div>
+					</div> 
 					<div class="col">
 						<div class="form-group">
 							<label for="plan_data">Phone Plan Data</label>

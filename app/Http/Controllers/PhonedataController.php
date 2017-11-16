@@ -47,28 +47,43 @@ class PhonedataController extends Controller
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
-		// $test = array();
 		$invoices['invoices'] = $this->db_get($request['date'], $request['local']);
 		return $invoices;
 	}
 
 	public function search(Request $request)
 	{
+		//	If string has a space, check if string is numeric or not if the spaces are replaced
 		if(strpos($request['search'], ' ')){
 			if(is_numeric(str_replace(' ', '', $request['search']))){
+				//	If search is numeric, use the db_search function
 				$search = str_replace(' ', '', $request['search']);
 				$invoices['invoices'] = $this->db_search($search);
 			} else {
+				//	If the search is alphabetical, explode string and use the cb_search_name function
 				$first_name = explode(' ', $request['search'])[0];
 				$last_name = explode(' ', $request['search'])[1];
 				$invoices['invoices'] = $this->db_search_name($first_name, $last_name);
+				//	If nothing is found, attempt to search the first string in the search
 				if(sizeof($invoices['invoices']) == 0){
 					$invoices['invoices'] = $this->db_search($first_name);
+					//	If nothing is found, attempt to search the second string in the search
 					if(sizeof($invoices['invoices']) == 0)
 						$invoices['invoices'] = $this->db_search($last_name);
+						//	If nothing is found, attempt to search the entire search in the search ???
+						if(sizeof($invoices['invoices']) == 0)
+							$invoices['invoices'] = $this->db_search($request['search']);
 				}
 			}
 		} else {
+			$count = 0;
+			if(is_numeric($request['search'])){
+				while(substr($request['search'], 0, 1) == 0 || $count == 8){
+					$request['search'] = ltrim($request['search'], 0);
+					$count++;
+				}
+			}
+			
 			$invoices['invoices'] = $this->db_search($request['search']);
 		}
 		return $invoices;
@@ -76,28 +91,12 @@ class PhonedataController extends Controller
 
 	public function download(Request $request, $date, $local)
 	{
-		$invoices['invoices'] = $this->db_get($request['date'], $request['local']);
-		
-		$data = array();
-		foreach ($invoices['invoices']->toArray() as $key => $value) {
-			$value['overage data'] = $invoices['overages'][$key]['overage_data'];
-			$value['overage cost'] = $invoices['overages'][$key]['overage_cost'];
-			array_push($data, $value);
-		}
-		$this->export($data);
+		$this->export($this->db_get_download($date, $local)->toArray());
 	}
 
 	public function downloadsearch(Request $request, $search)
 	{
-		$invoices['invoices'] = $this->db_search($request['search']);
-
-		$data = array();
-		foreach ($invoices['invoices']->toArray() as $key => $value) {
-			$value['overage data'] = $invoices['overages'][$key]['overage_data'];
-			$value['overage cost'] = $invoices['overages'][$key]['overage_cost'];
-			array_push($data, $value);
-		}
-		$this->export($data);
+		$this->export($this->db_get_download_search($search)->toArray());
 	}
 
 	public function upload(Request $request)
@@ -112,8 +111,8 @@ class PhonedataController extends Controller
 				$zone = 'cost';
 
 			//	Check if cost file was uploaded first
-			// if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
-			// 	return view('phonedata.uploaderror');
+			if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
+				return view('phonedata.uploaderror');
 
 			//	Handle inserts for other tables
 			$data_array = array();
@@ -137,62 +136,14 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 				
-				// $this->upload_data($data_array, $zone);
-				// $this->upload_zones($data_array, $zone);
+				$this->upload_data($data_array, $zone);
+				$this->upload_zones($data_array, $zone);
 				if($zone == 'usage') {
 					$this->upload_invoices($data_array);
 				}
 				return back();
 			}
 		}
-	}
-
-	public function generate(Request $request, $date, $local)
-	{
-		$data = $this->db_get($date, $local);
-		$html = '
-			<h1>Phone Data</h1>
-				<table cellpadding="10">
-					<tr><th>Name</th> <th>Phone</th> <th>Data</th> <th>Local</th> <th>Overage Cost</th></tr>';
-		foreach ($data as $key => $value) {
-			preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $value['phone'],  $matches );
-			$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$value['total_invoice'].'</td></tr>';
-		}
-		$html .= '</table>';
-
-		$dompdf = new Dompdf();
-		$dompdf->loadHtml($html);
-		$dompdf->render();
-		$dompdf->stream('invoice.pdf');
-	}
-
-	public function generatesearch(Request $request, $search)
-	{
-		$data = $this->db_search($search);
-		$html = '
-			<h1>Phone Data</h1>
-				<table cellpadding="10">
-					<tr><th>Name</th> <th>Phone</th> <th>Data</th> <th>Local</th> <th>Overage Cost</th></tr>';
-		foreach ($data as $key => $value) {
-			preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $value['phone'],  $matches );
-			$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-			$html .= '<tr><td>'.$value['first_name'].' '.$value['last_name'].'</td> <td>'.$phone.'</td> <td>'.$value['total_data'].'</td> <td>'.$value['local'].'</td> <td>$'.$overages[$key]['overage_cost'].'</td></tr>';
-		}
-		$html .= '</table>';
-
-		$dompdf = new Dompdf();
-		$dompdf->loadHtml($html);
-		$dompdf->render();
-		$dompdf->stream('invoice.pdf');
-	}
-
-	public function test($data)
-	{
-		echo '<pre>';
-		var_dump($data);
-		echo '</pre>';
-		die;
 	}
 
 	//	DATABASE CALLS
@@ -223,6 +174,32 @@ class PhonedataController extends Controller
 			->get();
 	}
 
+	public function db_get_download($date, $local)
+	{
+		return Invoices::select('invoices.invoice_id','invoices.phone','invoices.invoice_date','invoices.local','invoices.total_data','invoices.invoice_total','members.first_name','members.last_name','members.email','members.address','members.province','members.postal','members.plan_rate','members.plan_data')
+			->join('members', 'invoices.phone', '=', 'members.phone')
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('invoices.invoice_date', '=', $date)
+			->where('clients.local', '=', $local)
+			->limit(250)
+			->get();
+	}
+
+	public function db_get_download_search($search)
+	{
+		return Invoices::select('invoices.invoice_id','invoices.phone','invoices.invoice_date','invoices.local','invoices.total_data','invoices.invoice_total','members.first_name','members.last_name','members.email','members.address','members.province','members.postal','members.plan_rate','members.plan_data')
+			->join('members', 'invoices.phone', '=', 'members.phone')
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->where('invoices.invoice_id', 'like', '%'.$search.'%')
+			->orwhere('members.first_name', 'like', '%'.$search.'%')
+			->orwhere('members.last_name', 'like', '%'.$search.'%')
+			->orwhere('members.phone', 'like', '%'.$search.'%')
+			->orwhere('clients.local', 'like', '%'.$search.'%')
+			->orderBy('invoices.invoice_date', 'desc')
+			->limit(250)
+			->get();
+	}
+
 	public function db_get_local_size($local)
 	{
 		return Clients::where('local', '=', $local)
@@ -242,7 +219,8 @@ class PhonedataController extends Controller
 	{
 		return Invoices::join('members', 'invoices.phone', '=', 'members.phone')
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
-			->where('members.first_name', 'like', '%'.$search.'%')
+			->where('invoices.invoice_id', 'like', '%'.$search.'%')
+			->orwhere('members.first_name', 'like', '%'.$search.'%')
 			->orwhere('members.last_name', 'like', '%'.$search.'%')
 			->orwhere('members.phone', 'like', '%'.$search.'%')
 			->orwhere('clients.local', 'like', '%'.$search.'%')
@@ -310,10 +288,7 @@ class PhonedataController extends Controller
 
 		$zone = Zones_usage::where('phone', '=', $phone)
 		->where('invoice_date', '=', $date)
-		->sum(
-			'zones_usage.zone_1_data_usage_mb',
-			'zones_usage.zone_2_data_usage_mb',
-			'zones_usage.zone_3_data_usage_mb',
+		->select(
 			'zones_usage.zone_1_netherlands_antilles_data_usage',
 			'zones_usage.zone_1_austria_data_usage',
 			'zones_usage.zone_1_barbados_data_usage',
@@ -355,18 +330,29 @@ class PhonedataController extends Controller
 			'zones_usage.zone_2_india_data_usage',
 			'zones_usage.zone_2_cambodia_data_usage',
 			'zones_usage.zone_2_thailand_data_usage'
-		);
-		return intval($data) + intval($zone);
+		)
+			->get()
+			->toArray();
+
+		$zone_usage = 0;
+		foreach ($zone as $value) {
+			foreach ($value as $key => $val) {
+				if($val == null || $key == 'phone' || $key == 'invoice_date' || $key == 'id') continue;
+					$zone_usage += $value[$key];	
+			}
+		}
+
+		return intval($data) + intval($zone_usage);
 	}
 
 	public function db_all_cost($phone, $date)
 	{
 		//	IM SORRY THERE WAS NO OTHER WAY
-		$data = Data_cost::select('data_cost.rate_plan_charges', 'data_cost.total_roaming_charges')
-			->where('data_cost.phone', '=', $phone)
-			->where('data_cost.invoice_date', '=', $date)
-			->get()
-			->toArray()[0];
+		// $data = Data_cost::select('data_cost.rate_plan_charges', 'data_cost.total_roaming_charges')
+		// 	->where('data_cost.phone', '=', $phone)
+		// 	->where('data_cost.invoice_date', '=', $date)
+		// 	->get()
+		// 	->toArray()[0];
 
 		if(Members::where('members.phone', 'like', $phone)->count() > 0)
 			$rate =	$this->db_get_member_plan($phone);
@@ -376,12 +362,6 @@ class PhonedataController extends Controller
 		$zone = Zones_cost::where('phone', '=', $phone)
 			->where('invoice_date', '=', $date)
 			->select(
-				'zones_cost.zone_1_voice_cost',
-				'zones_cost.zone_2_voice_cost',
-				'zones_cost.zone_3_voice_cost',
-				'zones_cost.zone_1_data_cost',
-				'zones_cost.zone_2_data_cost',
-				'zones_cost.zone_3_data_cost',
 				'zones_cost.zone_1_netherlands_antilles_voice_cost',
 				'zones_cost.zone_1_australia_voice_cost',
 				'zones_cost.zone_1_barbados_voice_cost',
@@ -468,7 +448,8 @@ class PhonedataController extends Controller
 			}
 		}
 
-		$data_cost = $data['total_roaming_charges'] + $rate['plan_rate'];
+		$data_cost = $rate['plan_rate'];
+		// $data_cost = $data['total_roaming_charges'] + $rate['plan_rate'];
 		return $data_cost + $zone_cost;
 	}
 
@@ -513,7 +494,13 @@ class PhonedataController extends Controller
 		$invoice_total = $other_cost;
 		
 		if(isset($data['local'])) {
+			//	If the local is INDIV set the data cap to the members allowed usage
+			if($data['local'] == 'INDIV')
+				$locals[$data['local']]['allowed_usage'] = $data['plan_data'];
+
+			//	If the allowed usage for the local is less than the amount the local used
 			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage'] ){
+				//	If the member exceeded their data limit
 				if($data['total_domestic_data_mb'] > $data['plan_data']) {
 					$data_overage = $data['total_domestic_data_mb'] - $data['plan_data'];
 					$data_overage_cost = $data_overage * 0.02;
@@ -528,6 +515,9 @@ class PhonedataController extends Controller
 		return round($invoice_total *= 1.13, 2);
 	}
 
+	//	Purpose:	The purpose of this function is to calculate the invoice total from the given phone number and date
+	//	Params:		Takes a phone number (string) and the date (string/date)
+	//	Return:		Returns invoice total (double)
 	public function total_data_cost($phone, $date)
 	{
 		$member = $this->db_get_member_plan($phone);
@@ -674,13 +664,24 @@ class PhonedataController extends Controller
 	public function upload_blacklist($key_label)
 	{
 		$blacklist = array(
-			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges','canada_to_canada_long_distance_charges', 'canada_to_international_long_distance_charges','other_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_usa_long_distance_minutes','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes'
+			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges','canada_to_canada_long_distance_charges', 'canada_to_international_long_distance_charges','other_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes', 'zone_1_voice_cost', 'zone_2_voice_cost', 'zone_3_voice_cost', 'zone_1_data_cost', 'zone_2_data_cost', 'zone_3_data_cost',  'zone_1_voice_usage_minutes',  'zone_2_voice_usage_minutes',  'zone_3_voice_usage_minutes', 'zone_1_data_usage_mb', 'zone_2_data_usage_mb', 'zone_3_data_usage_mb'
 		);
 		foreach ($blacklist as $key => $value) {
 			if($key_label == $value)
 				return false;
 		}
 		return true;
+	}
+
+	//	Purpose:	This is a shortcut to print a dataset to the screen and then kill the app.
+	//	Params:		dataset you want displayed (array)
+	//	Return:		None
+	public function test($data)
+	{
+		echo '<pre>';
+		var_dump($data);
+		echo '</pre>';
+		die;
 	}
 
 }
