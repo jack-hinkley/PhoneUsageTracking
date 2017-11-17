@@ -7,7 +7,7 @@
 		</div><hr>
 		<?php 
 			if(isset($phone)) 
-				echo '<a href="/phonedata/outstanding" class="btn btn-outline-secondary" style="margin-bottom: 20px">Back to Outstanding Numbers</a>';
+				echo '<a href="/phoneplan/outstanding" class="btn btn-outline-secondary" style="margin-bottom: 20px">Back to Outstanding Numbers</a>';
 			else 
 				echo '<a href="/members" class="btn btn-outline-secondary" style="margin-bottom: 20px">Back to Members</a>';
 		 ?>
@@ -87,7 +87,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="postal">Postal Code</label>
-							<input name="postal" class="form-control" id="postal" placeholder="Postal Code">
+							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" pattern="[A-Za-z][0-9][A-Za-z] [0-9][A-Za-z][0-9]">
 						</div>
 					</div>
 				</div>

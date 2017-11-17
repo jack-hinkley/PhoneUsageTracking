@@ -60,7 +60,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="address">Address</label>
-							<input name="address" class="form-control" id="address" placeholder="Address" value="<?php echo $members->address?>" required>
+							<input name="address" class="form-control" id="address" placeholder="Address" value="<?php echo $members->address?>">
 						</div>
 					</div>
 					<div class="col">
@@ -86,7 +86,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="postal">Postal Code</label>
-							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="<?php echo $members->postal?>" required>
+							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" pattern="[A-Za-z][0-9][A-Za-z] [0-9][A-Za-z][0-9]" value="<?php echo $members->postal?>">
 						</div>
 					</div>
 				</div>

@@ -18,11 +18,11 @@ Route::get('logout', 'Auth\LoginController@logout');
 
 Route::group(['middleware' => ['auth']], function() {
 	//	USER ROUTES
-	Route::get('phonedata', 'PhonedataController@index');
-	Route::get('phonedata/outstanding', 'PhonedataController@outstandingindex');
-	Route::get('phonedata/details/{id}', 'PhonedataController@detailsindex');
-	Route::get('phonedata/download/{date}/{local}', 'PhonedataController@download');
-	Route::get('phonedata/downloadsearch/{search}', 'PhonedataController@downloadsearch');
+	Route::get('phoneplan', 'PhoneplanController@index');
+	Route::get('phoneplan/outstanding', 'PhoneplanController@outstandingindex');
+	Route::get('phoneplan/details/{id}', 'PhoneplanController@detailsindex');
+	Route::get('phoneplan/download/{date}/{local}', 'PhoneplanController@download');
+	Route::get('phoneplan/downloadsearch/{search}', 'PhoneplanController@downloadsearch');
 
 	Route::get('clients', 'ClientsController@index');
 	Route::get('clients/create', 'ClientsController@createindex');
@@ -36,10 +36,10 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('members/delete/{id}', 'MembersController@delete');
 
 	// AJAX CALLS
-	Route::post('phonedata/get', 'PhonedataController@get');
-	Route::post('phonedata/search', 'PhonedataController@search');
-	Route::post('phonedata/upload', 'PhonedataController@upload');
-	Route::post('phonedata/search/{query}', 'PhonedataController@search');
+	Route::post('phoneplan/get', 'PhoneplanController@get');
+	Route::post('phoneplan/search', 'PhoneplanController@search');
+	Route::post('phoneplan/upload', 'PhoneplanController@upload');
+	Route::post('phoneplan/search/{query}', 'PhoneplanController@search');
 
 	Route::post('clients/get', 'ClientsController@get');
 	Route::post('clients/search', 'ClientsController@search');

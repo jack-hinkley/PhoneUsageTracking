@@ -17,7 +17,7 @@
 			</li>
 			@if (Auth::check())
 			<li class="nav-item">
-				<a class="nav-link" href="{{ url('/phonedata') }}">Phone Data</a>
+				<a class="nav-link" href="{{ url('/phoneplan') }}">Phone Plans</a>
 			</li>
 			<li class="nav-item">
 				<a class="nav-link" href="{{ url('/clients') }}">Clients</a>

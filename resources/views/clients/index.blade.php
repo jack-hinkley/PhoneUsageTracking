@@ -18,7 +18,10 @@
 		//	Set token and data
 		var token = '<?php echo Session::token();?>';
 		get_clients(token);
+	});
 
+	//	Called because search is generated after the document is ready
+	function bind(token){
 		//	Listener for when the user presses enter
 		$('#search-input').keypress(function(e){
 			if(e.which == 13)
@@ -30,7 +33,7 @@
 			search = $('#search-input').val();
 			search_clients(token, search);
 		});
-	});
+	}
 
 	//	Purpose: 	This function makes and ajax call that returns all clients in the system
 	//	Params: 	CSRF token
@@ -43,11 +46,11 @@
 			datatype: "json",
 			success: function(data){
 				if(!$('.search-input').length) 
-					generate_search(data);
+					generate_search(data, token);
 				$('.data-container').html('');
 				$.each(data['clients'], function(key, val){
 					$('.data-container').append(
-						`<div class="card">
+						`<div class="card hidden">
 							<div class="card-header">${val['local']}
 								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="clients/edit/${val['client_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
@@ -61,6 +64,9 @@
 							</div>
 						</div>`
 					);
+				});
+				$.each($('.card'), function(key, val){
+					$(this).fadeIn(400);
 				});
 			}, error: function(){
 				if(attempts < 5){
@@ -86,7 +92,7 @@
 				$('.data-container').html('');
 				$.each(data['clients'], function(key, val){
 					$('.data-container').append(
-						`<div class="card">
+						`<div class="card hidden">
 							<div class="card-header">${val['local']}
 								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="clients/edit/${val['client_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
@@ -101,6 +107,9 @@
 						</div>`
 					);
 				});
+				$.each($('.card'), function(key, val){
+					$(this).fadeIn(400);
+				});
 			}, error: function(){
 				if(attempts < 5){
 					attempts++;
@@ -112,7 +121,7 @@
 		});
 	}
 
-	function generate_search(data){
+	function generate_search(data, token){
 		var html;
 		$.each(data['clients'], function(key, val){ 
 			html += `<option value="${val['local']}">${val['local']}</option>`; 
@@ -129,6 +138,7 @@
 				</div>
 			</div>`
 		);
+		bind(token);
 	}
 
 	//	Purpose: 	This function takes a 10 digit phone number and formats it to be reader friendly

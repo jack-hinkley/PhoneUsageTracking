@@ -77,6 +77,7 @@ class MembersController extends Controller
 	{
 		$phone = str_replace(' ','',$request->input('phone'));
 		$mobile = str_replace(' ','',$request->input('mobile'));
+		if($mobile == '')	$mobile = null;
 
 		$member = new Members;
 		$member->first_name = $request->input('first_name');
@@ -86,7 +87,7 @@ class MembersController extends Controller
 		$member->mobile =  $mobile;
 		$member->address = $request->input('address');
 		$member->province = $request->input('province');
-		$member->postal = $request->input('postal');
+		$member->postal = strtoupper($request->input('postal'));
 		$member->birthday = $request->input('birthday');
 		$member->client_id = $request->input('local');
 		$member->plan_rate = $request->input('rate');
@@ -101,6 +102,7 @@ class MembersController extends Controller
 	{
 		$phone = str_replace(' ','',$request->input('phone'));
 		$mobile = str_replace(' ','',$request->input('mobile'));
+		if($mobile == '')	$mobile = null;
 
 		$member = Members::find($id);
 		$member->first_name = $request->input('first_name');
@@ -110,7 +112,7 @@ class MembersController extends Controller
 		$member->mobile =  $mobile;
 		$member->address = $request->input('address');
 		$member->province = $request->input('province');
-		$member->postal = $request->input('postal');
+		$member->postal = strtoupper($request->input('postal'));
 		$member->birthday = $request->input('birthday');
 		$member->client_id = $request->input('local');
 		$member->plan_rate = $request->input('plan_rate');

@@ -3,20 +3,20 @@
 <div class="container">
 	<div class="content hidden">
 		<div class="page-header">
-			<h3 class="title pull-left d-print-none">PHONE DATA</h3>
+			<h3 class="title pull-left d-print-none">PHONE PLANS</h3>
 			<a href="#" class="btn btn-success pull-right d-print-none" data-toggle="modal" data-target="#uploadModal"><i class="fa fa-plus"></i>&nbsp Upload XLSX</a>
 			<a href="#" class="btn btn-info pull-right d-print-none" id="download"><i class="fa fa-download"></i>&nbsp Download XLS</a>
-			<button class="btn btn-warning pull-right d-print-none" onclick="window.print()" id="generate"><i class="fa fa-refresh"></i>&nbsp Generate Report</button>
+			<button class="btn btn-warning pull-right d-print-none" id="generate"><i class="fa fa-refresh"></i>&nbsp Generate Report</button>
 		</div><hr class="d-print-none">
 		<?php 
-			if(sizeof($phonedata['outstanding']) > 0){
-				echo '<a href="phonedata/outstanding" class="btn btn-danger pull-right  d-print-none">'.sizeof($phonedata['outstanding']).' Outstanding Numbers</a><br>';
+			if(sizeof($phoneplan['outstanding']) > 0){
+				echo '<a href="phoneplan/outstanding" class="btn btn-danger pull-right  d-print-none">'.sizeof($phoneplan['outstanding']).' Outstanding Numbers</a><br>';
 			}
 		 ?>
 		<div class="form-group d-print-none">
 			<label for="date-selector">Date</label>	
 			<select class="form-control" id="date-selector">
-				<?php foreach ($phonedata['dates'] as $key => $date){
+				<?php foreach ($phoneplan['dates'] as $key => $date){
 					echo '<option value="">'.$date->invoice_date.'</option>';
 				} ?>
 			</select>
@@ -24,7 +24,7 @@
 		<div class="form-group d-print-none">
 			<label for="local-selector">Local</label>	
 			<select class="form-control" id="local-selector">
-				<?php foreach ($phonedata['locals'] as $key => $local){
+				<?php foreach ($phoneplan['locals'] as $key => $local){
 					echo '<option value="">'.$local->local.'</option>';
 				} ?>
 			</select>
@@ -43,7 +43,7 @@
 	<div class="modal fade" id="uploadModal">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
-				<form action="phonedata/upload" method="POST" enctype="multipart/form-data">
+				<form action="phoneplan/upload" method="POST" enctype="multipart/form-data">
 				{{ csrf_field() }}
 					<div class="modal-header">
 						<h5 class="modal-title">Upload XLSX</h5>
@@ -110,9 +110,18 @@
 		//	Download CSV based on the current results
 		$('#download').click(function(){
 			if($('#search').val().length > 0)
-				window.location.replace('phonedata/downloadsearch/'+$('#search').val());
+				window.location.replace('phoneplan/downloadsearch/'+$('#search').val());
 			else
-				window.location.replace('phonedata/download/'+date+'/'+local);
+				window.location.replace('phoneplan/download/'+date+'/'+local);
+		});
+		//	Catch generate button event, change the title for file download, call the print method, after print change title back
+		$('#generate').click(function(e){
+			e.stopPropagation();
+			var local = $(this).data('local');
+			var date = $(this).data('date');
+			$('title').text('invoice_'+local+'_'+date);
+			window.print();
+			$('title').text('USI CRM');
 		});
 		//	Change data on page load
 		change_data(token, date, local);
@@ -124,17 +133,22 @@
 	//	Returns: 	Array of all requested invoices
 	function change_data(token, date, local) {
 		$.ajax({
-			url: "phonedata/get",
+			url: "phoneplan/get",
 			data: {_token: token, date: date, local: local},
 			method: "POST",
 			datatype: "json",
 			success: function(data){
+				$('#generate').data('local', local);
+				$('#generate').data('date', date);
 				$('.data-container').html('');
 				var total_cost = 0;
 				$.each(data['invoices'], function(key, val){
 					total_cost += parseFloat(val['invoice_total']);
 				});
-				$('.data-container').prepend(`<div class="d-print-block"><h1><div></div>INVOICE TOTAL<div class="pull-right">$${total_cost}</div></h1></div>`);
+				$('.data-container').prepend(`
+					<h2>LOCAL INVOICE TOTAL:<div class="pull-right">$${Math.round(total_cost*100)/100}</div></h2>
+					<h3 class="d-print-block">Invoice Date:<div class="pull-right">${date}</div></h3>
+					`);
 				if(data['invoices'].length == 0)
 					$('.data-container').append('<h3 class="text-muted" style="width: 100%; text-align: center; opacity:0">There are no search results</h3>')
 					.fadeIn("slow", function(){ $('.text-muted').animate({'opacity': '1'})});
@@ -145,7 +159,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phoneplan/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
@@ -184,7 +198,7 @@
 	//	Returns: 	Array of all requested invoices
 	function search_data(token, search){
 		$.ajax({
-			url: "phonedata/search",
+			url: "phoneplan/search",
 			data: {_token: token, search: search},
 			method: "POST",
 			datatype: "json",
@@ -197,7 +211,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phonedata/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phoneplan/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">

@@ -29,7 +29,6 @@
 			local = $('#local-selector').find(':selected').text();
 			get_members(token, local);
 		});
-
 		
 		generate_search(token);
 		get_members(token, local);
@@ -64,7 +63,7 @@
 				$.each(data['members'], function(key, val){
 					var phone = format_phone(val['phone']);
 					$('.data-container').append(
-						`<div class="card">
+						`<div class="card hidden">
 							<div class="card-header">${val['first_name']} ${val['last_name']}
 								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['member_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="members/edit/${val['member_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
@@ -102,6 +101,9 @@
 					//	Clean loading
 					$('.content').removeClass('hidden');
 				});
+				$.each($('.card'), function(key, val){
+					$(this).fadeIn(400);
+				});
 			}, error: function(){
 				if(attempts < 5){
 					attempts++;
@@ -128,7 +130,7 @@
 					var phone = format_phone(val['phone']);
 					$('#search-input').val('');
 					$('.data-container').append(
-						`<div class="card">
+						`<div class="card hidden">
 							<div class="card-header">${val['first_name']} ${val['last_name']}
 								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['member_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="members/edit/${val['member_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
@@ -165,6 +167,9 @@
 					);
 					//	Clean loading
 					$('.content').removeClass('hidden');
+				});
+				$.each($('.card'), function(key, val){
+					$(this).fadeIn(400);
 				});
 			}, error: function(){
 				if(attempts < 5){

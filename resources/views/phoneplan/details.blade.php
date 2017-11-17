@@ -4,7 +4,7 @@
 		<div class="content hidden">
 			<div class="page-header">
 				<h3 class="title d-print-none">INVOICE DETAILS</h3><hr class="d-print-none">
-				<a href="/phonedata" class="btn btn-outline-secondary d-print-none" style="margin-bottom: 20px">Back to Invoices</a>
+				<a href="/phoneplan" class="btn btn-outline-secondary d-print-none" style="margin-bottom: 20px">Back to Invoices</a>
 				<div class="card">
 					<div class="card-header">INVOICE #{{ sprintf("%06d",intval($invoice['invoices']->invoice_id)) }}</div>
 					<div class="card-body">
@@ -107,13 +107,19 @@
 
 				</div>
 				<br>
-				<button onclick="window.print()" class="btn btn-warning pull-right d-print-none"><i class="fa fa-refresh"></i>&nbsp&nbspGenerate Report</button>
+				<button class="btn btn-warning pull-right d-print-none" id="generate"><i class="fa fa-refresh"></i>&nbsp&nbspGenerate Report</button>
 			</div>
 		</div>
 	</div>
 
 <script type="text/javascript">
 	setTimeout(function(){ $('.content').removeClass('hidden') }, 100);
-	$('title').text('invoice_{{ sprintf("%06d",intval($invoice['invoices']->invoice_id)) }}');
+	$('#generate').click(function(e){
+		e.stopPropagation();
+		$('title').text('invoice_{{ sprintf("%06d",intval($invoice['invoices']->invoice_id)) }}');
+		window.print();
+		$('title').text('USI CRM');
+	});
+	
 </script>
 @endsection

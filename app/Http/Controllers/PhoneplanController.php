@@ -17,7 +17,7 @@ use Excel;
 use PDF;
 use Dompdf\Dompdf;
 
-class PhonedataController extends Controller
+class phoneplanController extends Controller
 {
 	//	USER ROUTES
 	public function index()
@@ -25,13 +25,13 @@ class PhonedataController extends Controller
 		$invoices['dates'] = $this->db_dates();
 		$invoices['locals'] = Clients::get();
 		$invoices['outstanding'] = $this->db_outstanding();
-		return view('phonedata.index', ['phonedata' => $invoices]);
+		return view('phoneplan.index', ['phoneplan' => $invoices]);
 	}
 
 	public function outstandingindex()
 	{
 		$invoices['outstanding'] = $this->db_outstanding();
-		return view('phonedata.outstanding', ['outstanding' => $invoices]);
+		return view('phoneplan.outstanding', ['outstanding' => $invoices]);
 	}
 
 	public function detailsindex(Request $request, $id)
@@ -41,7 +41,7 @@ class PhonedataController extends Controller
 		$invoices['data_usage'] = $this->db_all_data_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
 		$invoices['data_cost'] = $this->total_data_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
 		$invoices['zone_cost'] = $this->db_all_zones_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
-		return view('phonedata.details', ['invoice' => $invoices]);
+		return view('phoneplan.details', ['invoice' => $invoices]);
 	}
 
 	//	AJAX CALLS
@@ -111,8 +111,8 @@ class PhonedataController extends Controller
 				$zone = 'cost';
 
 			//	Check if cost file was uploaded first
-			if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
-				return view('phonedata.uploaderror');
+			// if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
+			// 	return view('phoneplan.uploaderror');
 
 			//	Handle inserts for other tables
 			$data_array = array();
@@ -136,8 +136,8 @@ class PhonedataController extends Controller
 					array_push($data_array, $data_row);
 				}
 				
-				$this->upload_data($data_array, $zone);
-				$this->upload_zones($data_array, $zone);
+				// $this->upload_data($data_array, $zone);
+				// $this->upload_zones($data_array, $zone);
 				if($zone == 'usage') {
 					$this->upload_invoices($data_array);
 				}
