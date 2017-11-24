@@ -35,7 +35,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="email">Email</label>
-							<input name="email" class="form-control" id="email" placeholder="Email" required>
+							<input name="email" class="form-control" id="email" placeholder="Email">
 						</div>
 					</div>
 					<div class="col">
@@ -61,7 +61,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="address">Address</label>
-							<input name="address" class="form-control" id="address" placeholder="Address" required>
+							<input name="address" class="form-control" id="address" placeholder="Address">
 						</div>
 					</div>
 					<div class="col">

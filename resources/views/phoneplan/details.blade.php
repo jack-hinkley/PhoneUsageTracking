@@ -38,7 +38,10 @@
 							</div>
 							<div class="form-group col-md-4">
 								<label for="name">Data Plan</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->plan_data }} MB" disabled="true">
+								<select name="name" class="form-control">
+									<option>3072 MB</option>
+									<option>6144 MB</option>
+								</select>
 							</div>
 							<div class="form-group col-md-4">
 								<label for="name">Total Data Usage</label>

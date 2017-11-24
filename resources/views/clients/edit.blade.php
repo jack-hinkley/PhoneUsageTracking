@@ -43,13 +43,13 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="address">Address</label>
-							<input name="address" class="form-control" id="address" placeholder="Address" value="{{$clients->address}}" required>
+							<input name="address" class="form-control" id="address" placeholder="Address" value="{{$clients->address}}">
 						</div>
 					</div>
 					<div class="col">
 						<div class="form-group">
 							<label for="postal">Postal Code</label>
-							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="{{$clients->postal}}" required>
+							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="{{$clients->postal}}">
 						</div>
 					</div>
 				</div>

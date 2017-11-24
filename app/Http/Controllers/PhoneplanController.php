@@ -44,6 +44,13 @@ class phoneplanController extends Controller
 		return view('phoneplan.details', ['invoice' => $invoices]);
 	}
 
+	public function testing()
+	{
+		// $this->db_all_cost('6473906782', '2016-09-11');
+		// $this->db_all_usage('6473906782', '2016-09-11');
+		$this->test($this->db_check_column('this_is_a_test', 'zones_usage'));
+	}
+
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
@@ -111,8 +118,8 @@ class phoneplanController extends Controller
 				$zone = 'cost';
 
 			//	Check if cost file was uploaded first
-			// if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
-			// 	return view('phoneplan.uploaderror');
+			if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
+				return view('phoneplan.uploaderror');
 
 			//	Handle inserts for other tables
 			$data_array = array();
@@ -125,6 +132,8 @@ class phoneplanController extends Controller
 						foreach ($row as $key => $cell) {
 							//	Check cell name against the blacklisted cell names
 							if($this->upload_blacklist($key)){
+								//	Check if the column exists, if it does create the column
+								// $this->db_check_column($key, 'zones_'.$zone);
 								if($key == 'invoice_date')
 									$cell = substr((string)$cell, 0, 10);
 								//	Push cell data in row array
@@ -136,8 +145,8 @@ class phoneplanController extends Controller
 					array_push($data_array, $data_row);
 				}
 				
-				// $this->upload_data($data_array, $zone);
-				// $this->upload_zones($data_array, $zone);
+				$this->upload_data($data_array, $zone);
+				$this->upload_zones($data_array, $zone);
 				if($zone == 'usage') {
 					$this->upload_invoices($data_array);
 				}
@@ -235,6 +244,7 @@ class phoneplanController extends Controller
 			->join('clients', 'members.client_id', '=', 'clients.client_id')
 			->where('members.first_name', 'like', '%'.$first_name.'%')
 			->where('members.last_name', 'like', '%'.$last_name.'%')
+			->orderBy('invoices.invoice_date', 'desc')
 			->limit(250)
 			->get();
 	}
@@ -288,49 +298,6 @@ class phoneplanController extends Controller
 
 		$zone = Zones_usage::where('phone', '=', $phone)
 		->where('invoice_date', '=', $date)
-		->select(
-			'zones_usage.zone_1_netherlands_antilles_data_usage',
-			'zones_usage.zone_1_austria_data_usage',
-			'zones_usage.zone_1_barbados_data_usage',
-			'zones_usage.zone_1_belgium_data_usage',
-			'zones_usage.zone_1_bahamas_data_usage',
-			'zones_usage.zone_1_switzerland_data_usage',
-			'zones_usage.zone_1_cyprus_data_usage',
-			'zones_usage.zone_1_germany_data_usage',
-			'zones_usage.zone_1_denmark_data_usage',
-			'zones_usage.zone_1_dominican_republic_data_usage',
-			'zones_usage.zone_1_spain_data_usage',
-			'zones_usage.zone_1_france_data_usage',
-			'zones_usage.zone_1_united_kingdom_data_usage',
-			'zones_usage.zone_1_gibraltar_data_usage',
-			'zones_usage.zone_1_guadeloupe_data_usage',
-			'zones_usage.zone_1_greece_data_usage',
-			'zones_usage.zone_1_hong_kong_data_usage',
-			'zones_usage.zone_1_croatia_data_usage',
-			'zones_usage.zone_1_hungary_data_usage',
-			'zones_usage.zone_1_ireland_data_usage',
-			'zones_usage.zone_1_iceland_data_usage',
-			'zones_usage.zone_1_italy_data_usage',
-			'zones_usage.zone_1_jamaica_data_usage',
-			'zones_usage.zone_1_monaco_data_usage',
-			'zones_usage.zone_1_montenegro_data_usage',
-			'zones_usage.zone_1_mexico_data_usage',
-			'zones_usage.zone_1_netherlands_data_usage',
-			'zones_usage.zone_1_norway_data_usage',
-			'zones_usage.zone_1_new_zealand_data_usage',
-			'zones_usage.zone_1_portugal_data_usage',
-			'zones_usage.zone_1_sweden_data_usage',
-			'zones_usage.zone_1_serbia_data_usage',
-			'zones_usage.zone_1_sint_maarten_data_usage',
-			'zones_usage.zone_1_turks_caicos_islands_data_usage',
-			'zones_usage.zone_1_british_virgin_islands_data_usage',
-			'zones_usage.zone_2_belize_data_usage',
-			'zones_usage.zone_2_costa_rica_data_usage',
-			'zones_usage.zone_2_honduras_data_usage',
-			'zones_usage.zone_2_india_data_usage',
-			'zones_usage.zone_2_cambodia_data_usage',
-			'zones_usage.zone_2_thailand_data_usage'
-		)
 			->get()
 			->toArray();
 
@@ -338,7 +305,8 @@ class phoneplanController extends Controller
 		foreach ($zone as $value) {
 			foreach ($value as $key => $val) {
 				if($val == null || $key == 'phone' || $key == 'invoice_date' || $key == 'id') continue;
-					$zone_usage += $value[$key];	
+					if(strpos($key, 'data'))
+						$zone_usage += $value[$key];	
 			}
 		}
 
@@ -348,11 +316,11 @@ class phoneplanController extends Controller
 	public function db_all_cost($phone, $date)
 	{
 		//	IM SORRY THERE WAS NO OTHER WAY
-		// $data = Data_cost::select('data_cost.rate_plan_charges', 'data_cost.total_roaming_charges')
-		// 	->where('data_cost.phone', '=', $phone)
-		// 	->where('data_cost.invoice_date', '=', $date)
-		// 	->get()
-		// 	->toArray()[0];
+		$data = Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits')
+			->where('data_cost.phone', '=', $phone)
+			->where('data_cost.invoice_date', '=', $date)
+			->get()
+			->toArray()[0];
 
 		if(Members::where('members.phone', 'like', $phone)->count() > 0)
 			$rate =	$this->db_get_member_plan($phone);
@@ -361,82 +329,6 @@ class phoneplanController extends Controller
 
 		$zone = Zones_cost::where('phone', '=', $phone)
 			->where('invoice_date', '=', $date)
-			->select(
-				'zones_cost.zone_1_netherlands_antilles_voice_cost',
-				'zones_cost.zone_1_australia_voice_cost',
-				'zones_cost.zone_1_barbados_voice_cost',
-				'zones_cost.zone_1_belgium_voice_cost',
-				'zones_cost.zone_1_bahamas_voice_cost',
-				'zones_cost.zone_1_switzerland_voice_cost',
-				'zones_cost.zone_1_china_voice_cost',
-				'zones_cost.zone_1_cyprus_voice_cost',
-				'zones_cost.zone_1_germany_voice_cost',
-				'zones_cost.zone_1_denmark_voice_cost',
-				'zones_cost.zone_1_dominican_republic_voice_cost',
-				'zones_cost.zone_1_spain_voice_cost',
-				'zones_cost.zone_1_france_voice_cost',
-				'zones_cost.zone_1_united_kingdom_voice_cost',
-				'zones_cost.zone_1_gibraltar_voice_cost',
-				'zones_cost.zone_1_greece_voice_cost',
-				'zones_cost.zone_1_ireland_voice_cost',
-				'zones_cost.zone_1_italy_voice_cost',
-				'zones_cost.zone_1_jamaica_voice_cost',
-				'zones_cost.zone_1_monaco_voice_cost',
-				'zones_cost.zone_1_montenegro_voice_cost',
-				'zones_cost.zone_1_mexico_voice_cost',
-				'zones_cost.zone_1_netherlands_voice_cost',
-				'zones_cost.zone_1_new_zealand_voice_cost',
-				'zones_cost.zone_1_portugal_voice_cost',
-				'zones_cost.zone_1_serbia_voice_cost',
-				'zones_cost.zone_1_sint_maarten_voice_cost',
-				'zones_cost.zone_1_turks_caicos_islands_voice_cost',
-				'zones_cost.zone_2_belize_voice_cost',
-				'zones_cost.zone_2_india_voice_cost',
-				'zones_cost.zone_2_cambodia_voice_cost',
-				'zones_cost.zone_2_vietnam_voice_cost',
-				'zones_cost.zone_3_kenya_voice_cost',
-				'zones_cost.zone_1_netherlands_antilles_data_cost',
-				'zones_cost.zone_1_austria_data_cost',
-				'zones_cost.zone_1_barbados_data_cost',
-				'zones_cost.zone_1_belgium_data_cost',
-				'zones_cost.zone_1_bahamas_data_cost',
-				'zones_cost.zone_1_switzerland_data_cost',
-				'zones_cost.zone_1_cyprus_data_cost',
-				'zones_cost.zone_1_germany_data_cost',
-				'zones_cost.zone_1_denmark_data_cost',
-				'zones_cost.zone_1_dominican_republic_data_cost',
-				'zones_cost.zone_1_spain_data_cost',
-				'zones_cost.zone_1_france_data_cost',
-				'zones_cost.zone_1_united_kingdom_data_cost',
-				'zones_cost.zone_1_gibraltar_data_cost',
-				'zones_cost.zone_1_guadeloupe_data_cost',
-				'zones_cost.zone_1_greece_data_cost',
-				'zones_cost.zone_1_hong_kong_data_cost',
-				'zones_cost.zone_1_croatia_data_cost',
-				'zones_cost.zone_1_hungary_data_cost',
-				'zones_cost.zone_1_ireland_data_cost',
-				'zones_cost.zone_1_iceland_data_cost',
-				'zones_cost.zone_1_italy_data_cost',
-				'zones_cost.zone_1_jamaica_data_cost',
-				'zones_cost.zone_1_monaco_data_cost',
-				'zones_cost.zone_1_montenegro_data_cost',
-				'zones_cost.zone_1_mexico_data_cost',
-				'zones_cost.zone_1_netherlands_data_cost',
-				'zones_cost.zone_1_norway_data_cost',
-				'zones_cost.zone_1_new_zealand_data_cost',
-				'zones_cost.zone_1_portugal_data_cost',
-				'zones_cost.zone_1_sweden_data_cost',
-				'zones_cost.zone_1_serbia_data_cost',
-				'zones_cost.zone_1_sint_maarten_data_cost',
-				'zones_cost.zone_1_turks_caicos_islands_data_cost',
-				'zones_cost.zone_1_british_virgin_islands_data_cost',
-				'zones_cost.zone_2_belize_data_cost',
-				'zones_cost.zone_2_costa_rica_data_cost',
-				'zones_cost.zone_2_honduras_data_cost',
-				'zones_cost.zone_2_india_data_cost',
-				'zones_cost.zone_2_cambodia_data_cost',
-				'zones_cost.zone_2_thailand_data_cost'
-		)
 			->get()
 			->toArray();
 
@@ -448,9 +340,8 @@ class phoneplanController extends Controller
 			}
 		}
 
-		$data_cost = $rate['plan_rate'];
-		// $data_cost = $data['total_roaming_charges'] + $rate['plan_rate'];
-		return $data_cost + $zone_cost;
+		$data_cost = $data['other_long_distance_charges'] + $data['canada_to_international_long_distance_charges'] + $data['other_charges_and_credits'];
+		return $rate['plan_rate'] + $zone_cost + $data_cost;
 	}
 
 	public function db_all_zone_usage($phone, $date)
@@ -481,6 +372,19 @@ class phoneplanController extends Controller
 			->get();
 	}
 
+	public function db_check_column($key, $table)
+	{
+		$column = DB::select('
+			SELECT * 
+			FROM information_schema.COLUMNS 
+			WHERE TABLE_SCHEMA = "test_laravel_phone_data" 
+			AND TABLE_NAME = "'.$table.'"
+			AND COLUMN_NAME = "'.$key.'"');
+
+		if(sizeof($column) == 0)
+			DB::select('ALTER TABLE '.$table.' ADD '.$key.' DOUBLE');
+	}
+
 	//	REUSABLE FUNCTIONS
 
 	//	Purpose:	The purpose of this function is to calculate all charges based on the given dataset
@@ -494,12 +398,8 @@ class phoneplanController extends Controller
 		$invoice_total = $other_cost;
 		
 		if(isset($data['local'])) {
-			//	If the local is INDIV set the data cap to the members allowed usage
-			if($data['local'] == 'INDIV')
-				$locals[$data['local']]['allowed_usage'] = $data['plan_data'];
-
 			//	If the allowed usage for the local is less than the amount the local used
-			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage'] ){
+			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage']){
 				//	If the member exceeded their data limit
 				if($data['total_domestic_data_mb'] > $data['plan_data']) {
 					$data_overage = $data['total_domestic_data_mb'] - $data['plan_data'];
@@ -636,15 +536,15 @@ class phoneplanController extends Controller
 	//	Return:		None
 	public function upload_zones($data_set, $zone)
 	{
-		if ($zone == 'usage') $start = 22;
-		else $start = 20;
+		if ($zone == 'usage') $start = 25;
+		else $start = 22;
 		foreach ($data_set as $data) {
 			$data_array = array();
 			$date = $data['invoice_date'];
 			$phone = $data['mobile_number'];
 			$count = 0;
 			foreach ($data as $key => $val) {
-				if($count >= $start && $val != 0) {					
+				if($count >= $start && $val != 0) {
 					$data_row = [
 						'invoice_date' => $date,
 						'phone' => $phone,
@@ -664,7 +564,7 @@ class phoneplanController extends Controller
 	public function upload_blacklist($key_label)
 	{
 		$blacklist = array(
-			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','other_charges_and_credits','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges','canada_to_canada_long_distance_charges', 'canada_to_international_long_distance_charges','other_long_distance_charges','incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','canada_to_international_long_distance_minutes','other_long_distance_minutes','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes', 'zone_1_voice_cost', 'zone_2_voice_cost', 'zone_3_voice_cost', 'zone_1_data_cost', 'zone_2_data_cost', 'zone_3_data_cost',  'zone_1_voice_usage_minutes',  'zone_2_voice_usage_minutes',  'zone_3_voice_usage_minutes', 'zone_1_data_usage_mb', 'zone_2_data_usage_mb', 'zone_3_data_usage_mb'
+			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges', 'total_roaming_charges','canada_to_canada_long_distance_charges', 'incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes', 'zone_1_voice_cost', 'zone_2_voice_cost', 'zone_3_voice_cost', 'zone_1_data_cost', 'zone_2_data_cost', 'zone_3_data_cost',  'zone_1_voice_usage_minutes',  'zone_2_voice_usage_minutes',  'zone_3_voice_usage_minutes', 'zone_1_data_usage_mb', 'zone_2_data_usage_mb', 'zone_3_data_usage_mb'
 		);
 		foreach ($blacklist as $key => $value) {
 			if($key_label == $value)

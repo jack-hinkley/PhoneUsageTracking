@@ -7,6 +7,9 @@
 		margin: 0 auto;
 		margin-top: 20%;
 	}
+	.card-block {
+		margin-top: 20px;
+	}
 </style>
 <div class="container">
 	<div class="card login-form">

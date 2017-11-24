@@ -24,6 +24,8 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::get('phoneplan/download/{date}/{local}', 'PhoneplanController@download');
 	Route::get('phoneplan/downloadsearch/{search}', 'PhoneplanController@downloadsearch');
 
+	Route::get('test', 'PhoneplanController@testing');
+
 	Route::get('clients', 'ClientsController@index');
 	Route::get('clients/create', 'ClientsController@createindex');
 	Route::get('clients/edit/{id}', 'ClientsController@editindex');

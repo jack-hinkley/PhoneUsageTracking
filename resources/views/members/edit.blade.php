@@ -29,7 +29,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="email">Email</label>
-							<input name="email" class="form-control" id="email" placeholder="Email" value="<?php echo $members->email?>" required>
+							<input name="email" class="form-control" id="email" placeholder="Email" value="<?php echo $members->email?>">
 						</div>
 					</div>
 					<div class="col">
@@ -128,7 +128,7 @@
 					</div>
 					
 				</div>
-				<input type="submit" class="btn btn-primary" value="Update">
+				<input type="submit" class="btn btn-primary" id="submit" value="Update">
 			</div>
 		</form>
 		<div class="data-container"></div>

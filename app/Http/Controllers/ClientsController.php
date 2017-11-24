@@ -48,7 +48,7 @@ class ClientsController extends Controller
 
 	public function edit(Request $request, $id)
 	{
-		$this->db_create($id, $request['local'], $request['address'], $request['province'], $request['postal']);
+		$this->db_edit($id, $request['local'], $request['address'], $request['province'], $request['postal']);
 		return redirect('/clients');
 	}
 

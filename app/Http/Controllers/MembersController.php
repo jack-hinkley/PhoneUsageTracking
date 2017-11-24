@@ -90,8 +90,8 @@ class MembersController extends Controller
 		$member->postal = strtoupper($request->input('postal'));
 		$member->birthday = $request->input('birthday');
 		$member->client_id = $request->input('local');
-		$member->plan_rate = $request->input('rate');
-		$member->plan_data = $request->input('data');
+		$member->plan_rate = $request->input('plan_rate');
+		$member->plan_data = $request->input('plan_data');
 		$member->created_at = date('Y-m-d');
 		$member->updated_at = date('Y-m-d');
 		$member->save();
@@ -119,7 +119,7 @@ class MembersController extends Controller
 		$member->plan_data = $request->input('plan_data');
 		$member->updated_at = date('Y-m-d');
 		$member->save();
-		return redirect('/members/edit/'.$id);
+		return '<script>window.history.go(-2)</script>';
 	}
 
 	public function delete(Request $request, $id)

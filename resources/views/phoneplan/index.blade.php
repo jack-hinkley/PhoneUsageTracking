@@ -159,7 +159,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phoneplan/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phoneplan/details/${val['invoice_id']}" target="_blank" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
@@ -211,7 +211,7 @@
 						`<div class="card hidden">
 							<div class="card-header">
 								${ val['first_name'] } ${val['last_name']}
-								<a href="phoneplan/details/${val['invoice_id']}" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
+								<a href="phoneplan/details/${val['invoice_id']}" target="_blank" class="btn btn-info btn-sm pull-right d-print-none"><i class="fa fa-info"></i>&nbsp Details</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
