@@ -66,7 +66,7 @@
 						`<div class="card hidden">
 							<div class="card-header">${val['first_name']} ${val['last_name']}
 								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['member_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
-								<a href="members/edit/${val['member_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
+								<a href="members/edit/${val['member_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
@@ -133,7 +133,7 @@
 						`<div class="card hidden">
 							<div class="card-header">${val['first_name']} ${val['last_name']}
 								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['member_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
-								<a href="members/edit/${val['member_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
+								<a href="members/edit/${val['member_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">

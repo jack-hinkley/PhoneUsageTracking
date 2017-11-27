@@ -19,6 +19,7 @@ class MembersController extends Controller
 	public function createindex(Request $request)
 	{
 		$locals['locals'] = Clients::get();
+		$locals['phones'] = $this->db_get_all_phones();
 		return view('members.create', ['locals' => $locals]);
 	}
 
@@ -119,7 +120,7 @@ class MembersController extends Controller
 		$member->plan_data = $request->input('plan_data');
 		$member->updated_at = date('Y-m-d');
 		$member->save();
-		return '<script>window.history.go(-2)</script>';
+		return '<script>window.close();</script>';
 	}
 
 	public function delete(Request $request, $id)
@@ -150,6 +151,13 @@ class MembersController extends Controller
 			->where('members.first_name', 'like', '%'.$first_name.'%')
 			->orwhere('members.first_name', 'like', '%'.$last_name.'%')
 			->get();
+	}
+
+	public function db_get_all_phones()
+	{
+		return Members::select('phone')
+			->get()
+			->toArray();
 	}
 
 }

@@ -19,6 +19,9 @@ use Dompdf\Dompdf;
 
 class phoneplanController extends Controller
 {
+	public $usage_start = 25;
+	public $cost_start = 23;
+
 	//	USER ROUTES
 	public function index()
 	{
@@ -37,10 +40,14 @@ class phoneplanController extends Controller
 	public function detailsindex(Request $request, $id)
 	{
 		$invoices['invoices'] = $this->db_get_id($id)[0];
-		$invoices['zone_usage'] = $this->db_all_zone_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
-		$invoices['data_usage'] = $this->db_all_data_usage($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
-		$invoices['data_cost'] = $this->total_data_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
-		$invoices['zone_cost'] = $this->db_all_zones_cost($invoices['invoices']->phone, $invoices['invoices']->invoice_date);
+		$phone = $invoices['invoices']->phone;
+		$date = $invoices['invoices']->invoice_date;
+		$invoices['zone_usage'] = $this->db_all_zone_usage($phone, $date);
+		$invoices['data_usage'] = $this->db_all_data_usage($phone, $date);
+		$invoices['other_cost'] = $this->db_other_charges($phone, $date);
+		$invoices['list_cost'] = $this->db_list_cost($phone, $date);
+		$invoices['data_cost'] = $this->total_data_cost($phone, $date);
+		$invoices['zone_cost'] = $this->db_all_zones_cost($phone, $date);
 		return view('phoneplan.details', ['invoice' => $invoices]);
 	}
 
@@ -48,7 +55,7 @@ class phoneplanController extends Controller
 	{
 		// $this->db_all_cost('6473906782', '2016-09-11');
 		// $this->db_all_usage('6473906782', '2016-09-11');
-		$this->test($this->db_check_column('this_is_a_test', 'zones_usage'));
+		// $this->test($this->db_check_column('this_is_a_test', 'zones_usage'));
 	}
 
 	//	AJAX CALLS
@@ -118,8 +125,8 @@ class phoneplanController extends Controller
 				$zone = 'cost';
 
 			//	Check if cost file was uploaded first
-			if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
-				return view('phoneplan.uploaderror');
+			// if((Data_usage::count() >= Data_cost::count()) && $zone == 'usage')
+			// 	return view('phoneplan.uploaderror');
 
 			//	Handle inserts for other tables
 			$data_array = array();
@@ -145,8 +152,8 @@ class phoneplanController extends Controller
 					array_push($data_array, $data_row);
 				}
 				
-				$this->upload_data($data_array, $zone);
-				$this->upload_zones($data_array, $zone);
+				// $this->upload_data($data_array, $zone);
+				// $this->upload_zones($data_array, $zone);
 				if($zone == 'usage') {
 					$this->upload_invoices($data_array);
 				}
@@ -313,10 +320,19 @@ class phoneplanController extends Controller
 		return intval($data) + intval($zone_usage);
 	}
 
+	public function db_other_charges($phone, $date)
+	{
+		return Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges')
+			->where('data_cost.phone', '=', $phone)
+			->where('data_cost.invoice_date', '=', $date)
+			->get()
+			->toArray()[0];
+	}
+
 	public function db_all_cost($phone, $date)
 	{
 		//	IM SORRY THERE WAS NO OTHER WAY
-		$data = Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits')
+		$data = Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges')
 			->where('data_cost.phone', '=', $phone)
 			->where('data_cost.invoice_date', '=', $date)
 			->get()
@@ -340,8 +356,15 @@ class phoneplanController extends Controller
 			}
 		}
 
-		$data_cost = $data['other_long_distance_charges'] + $data['canada_to_international_long_distance_charges'] + $data['other_charges_and_credits'];
-		return $rate['plan_rate'] + $zone_cost + $data_cost;
+		// if(isset($data))
+		// 	$data = $data->toArray()[0];
+		$data_cost = 0;
+		foreach ($data as $key => $value) {
+			$data_cost += $value;
+		}
+		// $data_cost = $data['other_long_distance_charges'] + $data['canada_to_international_long_distance_charges'] + $data['other_charges_and_credits'];
+		// return $rate['plan_rate'] + $zone_cost + $data_cost;
+		return $rate['plan_rate'] + $data_cost;
 	}
 
 	public function db_all_zone_usage($phone, $date)
@@ -385,6 +408,32 @@ class phoneplanController extends Controller
 			DB::select('ALTER TABLE '.$table.' ADD '.$key.' DOUBLE');
 	}
 
+	public function db_list_cost($phone, $date)
+	{
+		return Data_cost::select(
+			'domestic_text_charges',
+			'usa_roaming_text_charges',
+			'intl_roaming_text_charges',
+			'cdn_to_usa_ld_charges',
+			'usa_voice_roaming_charges',
+			'usa_data_roaming_charges',
+			'international_voice_roaming_charges',
+			'international_data_usage_charges')
+			->where('phone', '=', $phone)
+			->where('invoice_date', '=', $date)
+			->get()
+			->toArray()[0];
+	}
+
+	public function db_get_local_data($local)
+	{
+		return Clients::select('members.plan_data', 'members.phone')
+			->join('Members', 'clients.client_id', '=', 'members.client_id')
+			->where('clients.local', '=', $local)
+			->get()
+			->toArray();
+	}
+
 	//	REUSABLE FUNCTIONS
 
 	//	Purpose:	The purpose of this function is to calculate all charges based on the given dataset
@@ -394,25 +443,22 @@ class phoneplanController extends Controller
 	{
 		$phone = (string)$data['mobile_number'];
 		$date = $data['invoice_date'];
-		$other_cost = round($this->db_all_cost($phone, $date), 2);
-		$invoice_total = $other_cost;
+		$data_overage_cost = 0;
 		
 		if(isset($data['local'])) {
 			//	If the allowed usage for the local is less than the amount the local used
-			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage']){
+			if($locals[$data['local']]['allowed_usage'] < $locals[$data['local']]['total_usage']) {
+
 				//	If the member exceeded their data limit
 				if($data['total_domestic_data_mb'] > $data['plan_data']) {
+					//	Get the amount of data each member went over their specific plan
 					$data_overage = $data['total_domestic_data_mb'] - $data['plan_data'];
-					$data_overage_cost = $data_overage * 0.02;
-					$invoice_total_data = $other_cost + $data_overage_cost;
+					$local_overage = $locals[$data['local']]['total_usage'] - $locals[$data['local']]['allowed_usage'];
+					$data_overage_cost = $local_overage * ($data_overage / $locals[$data['local']]['data_cap']) * 0.02;
 				}
 			}
 		}
-
-		if(isset($invoice_total_data))
-			$invoice_total = $invoice_total_data;
-		
-		return round($invoice_total *= 1.13, 2);
+		return $data_overage_cost;
 	}
 
 	//	Purpose:	The purpose of this function is to calculate the invoice total from the given phone number and date
@@ -428,6 +474,7 @@ class phoneplanController extends Controller
 		$costs['plan_rate'] = $member['plan_rate'];
 		$costs['sub_total'] = $invoice['invoice_total'] / 1.13;
 		$costs['taxes'] = $invoice['invoice_total'] - $costs['sub_total'];
+		$costs['total_data_overage'] = $invoice['overage_total'];
 		
 		if (sizeof($zones) > 0) {
 			foreach ($zones as $value) {
@@ -438,7 +485,7 @@ class phoneplanController extends Controller
 				}
 			}
 		}
-		$costs['total_usage_cost'] = $costs['sub_total'] - ($total_zones_cost + $costs['plan_rate']);
+		// $costs['total_usage_cost'] = $costs['sub_total'] - ($total_zones_cost + $costs['plan_rate']);
 		return $costs;
 	}
 
@@ -463,12 +510,12 @@ class phoneplanController extends Controller
 		$locals = array();
 
 		foreach ($data_set as $key => $value) {
-			$test = $this->db_get_local_by_phone($value['mobile_number'])->toArray();
-			if(isset($test[0]['local'])) {
-				$data_set[$key]['local'] = $test[0]['local'];
-				$data_set[$key]['plan_data'] = $test[0]['plan_data'];
+			$local = $this->db_get_local_by_phone($value['mobile_number'])->toArray();
+			if(isset($local[0]['local'])) {
+				$data_set[$key]['local'] = $local[0]['local'];
+				$data_set[$key]['plan_data'] = $local[0]['plan_data'];
 			}
-		}
+		}		
 
 		//	Iterate through invoices and collect total usage and total allowed usage, store in locals array
 		foreach ($data_set as $key => $value) {
@@ -476,21 +523,27 @@ class phoneplanController extends Controller
 				if(isset($locals[$value['local']])) {
 					$locals[$value['local']]['allowed_usage'] = $locals[$value['local']]['allowed_usage'] + $value['plan_data'];
 					$locals[$value['local']]['total_usage'] = $locals[$value['local']]['total_usage'] + $value['total_domestic_data_mb'];
+					$data_cap_temp = $value['total_domestic_data_mb'] - $value['plan_data'];
+					$locals[$value['local']]['data_cap'] = $locals[$value['local']]['data_cap'] + ($data_cap_temp > 0 ? $data_cap_temp : 0);
 				}	else {
 					$locals[$value['local']]['allowed_usage'] = $value['plan_data'];
 					$locals[$value['local']]['total_usage'] = $value['total_domestic_data_mb'];
+					$locals[$value['local']]['data_cap'] = $value['total_domestic_data_mb'] - $value['plan_data'];
 				}
 			}
 		}
 
 		foreach ($data_set as $key => $data) {
 			//	Calculate the total invoice price
-			$invoice_total = $this->calculateInvoice($data, $locals);
+			$other_costs = round($this->db_all_cost($data['mobile_number'], $data['invoice_date']), 2);
+			$overage_cost = round($this->calculateInvoice($data, $locals),2);
+			$invoice_total = round(($other_costs + $overage_cost) * 1.13, 2);
 
 			$data_array = array(
 				'invoice_date' => $data['invoice_date'],
 				'phone' => $data['mobile_number'],
 				'invoice_total' => $invoice_total,
+				'overage_total' => $overage_cost,
 				'local' => null,
 				'created_at'=> date('Y-m-d'),
 				'updated_at'=> date('Y-m-d')
@@ -512,8 +565,8 @@ class phoneplanController extends Controller
 	public function upload_data($data_set, $zone)
 	{
 		$data_master = array();
-		if ($zone == 'usage') $start = 22;
-		else $start = 20;
+		if ($zone == 'usage') $start = $this->usage_start;
+		else $start = $this->cost_start;
 		foreach ($data_set as $data) {
 			$data_array = array();
 			$data_array['invoice_date'] = $data['invoice_date'];
@@ -536,8 +589,8 @@ class phoneplanController extends Controller
 	//	Return:		None
 	public function upload_zones($data_set, $zone)
 	{
-		if ($zone == 'usage') $start = 25;
-		else $start = 22;
+		if ($zone == 'usage') $start = $this->usage_start;
+		else $start = $this->cost_start;
 		foreach ($data_set as $data) {
 			$data_array = array();
 			$date = $data['invoice_date'];
@@ -564,7 +617,7 @@ class phoneplanController extends Controller
 	public function upload_blacklist($key_label)
 	{
 		$blacklist = array(
-			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges', 'total_roaming_charges','canada_to_canada_long_distance_charges', 'incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes', 'zone_1_voice_cost', 'zone_2_voice_cost', 'zone_3_voice_cost', 'zone_1_data_cost', 'zone_2_data_cost', 'zone_3_data_cost',  'zone_1_voice_usage_minutes',  'zone_2_voice_usage_minutes',  'zone_3_voice_usage_minutes', 'zone_1_data_usage_mb', 'zone_2_data_usage_mb', 'zone_3_data_usage_mb'
+			'group_id','group_name','account_number','account_name','device_type','user_last_name','user_first_name','status','category','sub_category','esnimei', 'reference','po_number','activation_date','network_type','model_code','model_description','sim_number','deactivation_date','current_adjustments','feature_charges','gst','hst','orst','qst_telecom','qst_other','p.e.i.','bc_pst','sask','manitoba','foreign_tax','total_taxes','hst_pei_tel','hst_on_tel','hst_bc_tel','on_device_domestic_data_charges','total_domestic_data_charges','canada_to_canada_long_distance_charges', 'incoming_day_minutes','incoming_night_minutes','incoming_weekend_minutes','outgoing_day_minutes','outgoing_night_minutes','outgoing_weekend_minutes','total_day_minutes','total_night_minutes','total_weekend_minutes','domestic_texts_received','domestic_texts_sent','bell_mobile_to_bell_mobile_minutes','bell_mobile_to_bell_mobile_long_distance_minutes', 'zone_1_voice_cost', 'zone_2_voice_cost', 'zone_3_voice_cost', 'zone_1_data_cost', 'zone_2_data_cost', 'zone_3_data_cost',  'zone_1_voice_usage_minutes',  'zone_2_voice_usage_minutes',  'zone_3_voice_usage_minutes', 'zone_1_data_usage_mb', 'zone_2_data_usage_mb', 'zone_3_data_usage_mb'
 		);
 		foreach ($blacklist as $key => $value) {
 			if($key_label == $value)

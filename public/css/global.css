@@ -102,6 +102,9 @@ body {
 	.form-group, .col-md-6 {
 		width: 50% !important;
 	}
+	.form-group {
+		margin-bottom: 2px !important;
+	}
 	.col-md-8 {
 		width: calc(100% * (8/12)) !important;
 	}
@@ -110,6 +113,11 @@ body {
 	}
 	input {
 		font-size: inherit !important;
+		padding: .25rem .5rem !important;
+	}
+	select {
+		font-size: inherit !important;
+		height: 2.75vh !important;
 	}
 	.card-header, .card-body {
 		padding: 5px !important;

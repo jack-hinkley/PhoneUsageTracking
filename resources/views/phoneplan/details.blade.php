@@ -12,11 +12,11 @@
 						<div class="row">
 							<div class="form-group col-md-6">
 								<label for="name">Name</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->first_name }} {{ $invoice['invoices']->last_name }}" disabled="true">
+								<input name="name" class="form-control info" value="{{ $invoice['invoices']->first_name }} {{ $invoice['invoices']->last_name }}" disabled="true">
 							</div>
 							<div class="form-group col-md-6">
 								<label for="name">Phone Number</label>
-								<input name="name" class="form-control" value="<?php 
+								<input name="name" class="form-control info" value="<?php 
 									preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $invoice['invoices']->phone, $matches);
 									$phone = $matches[1].' '.$matches[2].' '.$matches[3]; 
 									echo $phone;
@@ -25,25 +25,25 @@
 
 							<div class="form-group col-md-6">
 								<label for="name">Address</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->address }}, {{ $invoice['invoices']->province }}, {{ $invoice['invoices']->postal }}" disabled="true">
+								<input name="name" class="form-control info" value="{{ $invoice['invoices']->address }}, {{ $invoice['invoices']->province }}, {{ $invoice['invoices']->postal }}" disabled="true">
 							</div>
 							<div class="form-group col-md-6">
 								<label for="name">Local/Home</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->local }}" disabled="true">
+								<input name="name" class="form-control info" value="{{ $invoice['invoices']->local }}" disabled="true">
 							</div>
 
 							<div class="form-group col-md-4">
 								<label for="name">Date</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->invoice_date }}" disabled="true">
+								<input name="name" class="form-control info" value="{{ $invoice['invoices']->invoice_date }}" disabled="true">
 							</div>
-							<div class="form-group col-md-4">
+							<div class="form-group col-md-4 info">
 								<label for="name">Data Plan</label>
 								<select name="name" class="form-control">
 									<option>3072 MB</option>
 									<option>6144 MB</option>
 								</select>
 							</div>
-							<div class="form-group col-md-4">
+							<div class="form-group col-md-4 info">
 								<label for="name">Total Data Usage</label>
 								<input name="name" class="form-control" value="{{ $invoice['invoices']->total_data }} MB" disabled="true">
 							</div>
@@ -52,12 +52,31 @@
 						<h3>COST BREAKDOWN</h3>
 						<div class="row">
 							@foreach ($invoice['data_cost'] as $key => $val)
-									<div class="col-md-6">
-										<div class="row">
-											<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
-											<div class="col-md-4" style="text-align: right;">${{ number_format(round($val, 2), 2, '.', '') }}</div>	
-										</div>
+								<?php if($val < 1) continue; ?>
+								<div class="col-md-6">
+									<div class="row">
+										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
+										<div class="col-md-4" style="text-align: right;">${{ number_format(round($val, 2), 2, '.', '') }}</div>	
 									</div>
+								</div>
+							@endforeach
+							@foreach ($invoice['list_cost'] as $key => $val)
+								<?php if($val < 1) continue; ?>
+								<div class="col-md-6">
+									<div class="row">
+										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
+										<div class="col-md-4" style="text-align: right;">${{ number_format(round($val, 2), 2, '.', '') }}</div>	
+									</div>
+								</div>
+							@endforeach
+							@foreach ($invoice['other_cost'] as $key => $val)
+								<?php if($val < 1) continue; ?>
+								<div class="col-md-6">
+									<div class="row">
+										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
+										<div class="col-md-4" style="text-align: right;">${{ number_format(round($val, 2), 2, '.', '') }}</div>	
+									</div>
+								</div>
 							@endforeach	
 						</div>
 						<br>
@@ -65,7 +84,7 @@
 						<div class="row">
 							@foreach ($invoice['data_usage'] as $usage)
 								@foreach ($usage->toArray() as $key => $val)
-									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone') continue; ?>
+									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone' || $val < 1) continue; ?>
 									<div class="col-md-6">
 										<div class="row">
 											<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>

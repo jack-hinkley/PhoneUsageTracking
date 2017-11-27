@@ -12,7 +12,7 @@
 				echo '<a href="/members" class="btn btn-outline-secondary" style="margin-bottom: 20px">Back to Members</a>';
 		 ?>
 		
-		<form action="/members/create" method="POST" role="form">
+		<form action="/members/create" method="POST" role="form" onsubmit="return validation()">
 		{{ csrf_field() }}
 			<div class="col-md-12">
 				<!-- ROW 1 -->
@@ -131,4 +131,35 @@
 		<div class="data-container"></div>
 	</div>
 </div>
+
+<script type="text/javascript">
+	function validation() {
+		var token = '<?php echo Session::token();?>';
+		var phone = $('#phone').val().replace(/ /g,'');
+		var result = true;
+		validate = ["<?php
+			foreach ($locals['phones'] as $key => $value) {
+				echo $value['phone'].'", "';
+			}
+			?>"];
+		$.each(validate, function(key, val){
+			if(val == phone) result = false;
+		});
+
+		if(result == true) {
+			return true;
+		}	else {
+			$('#error').html(`
+				<div class="alert alert-warning fade show" role="alert">
+					<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				    <span aria-hidden="true">&times;</span>
+				  </button>
+			  	<strong>Warning!</strong> This phone number already exists
+				</div>
+			`);
+			return false;
+		}
+	}
+</script>
+
 @endsection

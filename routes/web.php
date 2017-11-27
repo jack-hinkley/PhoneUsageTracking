@@ -44,6 +44,7 @@ Route::group(['middleware' => ['auth']], function() {
 	Route::post('phoneplan/search/{query}', 'PhoneplanController@search');
 
 	Route::post('clients/get', 'ClientsController@get');
+	Route::post('clients/validation', 'ClientsController@validation');
 	Route::post('clients/search', 'ClientsController@search');
 	Route::post('clients/create', 'ClientsController@create');
 	Route::post('clients/edit/{id}', 'ClientsController@edit');

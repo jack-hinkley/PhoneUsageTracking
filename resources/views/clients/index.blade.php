@@ -24,8 +24,9 @@
 	function bind(token){
 		//	Listener for when the user presses enter
 		$('#search-input').keypress(function(e){
-			if(e.which == 13)
+			if(e.which == 13){
 				$('#search-button').click();
+			}
 		});
 
 		//	Change data based on query in search bar
@@ -53,7 +54,7 @@
 						`<div class="card hidden">
 							<div class="card-header">${val['local']}
 								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
-								<a href="clients/edit/${val['client_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
+								<a href="clients/edit/${val['client_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
@@ -95,7 +96,7 @@
 						`<div class="card hidden">
 							<div class="card-header">${val['local']}
 								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
-								<a href="clients/edit/${val['client_id']}" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
+								<a href="clients/edit/${val['client_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">

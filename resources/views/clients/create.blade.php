@@ -6,7 +6,8 @@
 			<h3 class="title pull-left">CREATE CLIENT</h3>
 		</div><hr>
 		<a href="/clients" class="btn btn-outline-secondary" style="margin-bottom: 20px">Back to Clients</a>
-		<form action="/clients/create" method="POST" role="form">
+		<div id="error"></div>
+		<form action="/clients/create" method="POST" role="form" onsubmit="return validation()" id="form">
 		{{ csrf_field() }}
 			<div class="col-md-12">
 				<!-- ROW 1 -->
@@ -59,4 +60,33 @@
 		<div class="data-container"></div>
 	</div>
 </div>
+
+<script type="text/javascript">
+	function validation() {
+		var token = '<?php echo Session::token();?>';
+		var local = $('#local').val();
+		var result = true;
+		validate = ["<?php
+			foreach ($clients['clients'] as $key => $value) {
+				echo $value['local'].'", "';
+			}
+			?>"];
+		$.each(validate, function(key, val){
+			if(val == local) result = false;
+		});
+		if(result == true) {
+			return true;
+		}	else {
+			$('#error').html(`
+				<div class="alert alert-warning fade show" role="alert">
+					<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				    <span aria-hidden="true">&times;</span>
+				  </button>
+			  	<strong>Warning!</strong> This client already exists
+				</div>
+			`);
+			return false;
+		}
+	}
+</script>
 @endsection

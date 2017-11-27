@@ -18,7 +18,8 @@ class ClientsController extends Controller
 
 	public function createindex(Request $request)
 	{
-		return view('clients.create');
+		$clients['clients'] = Clients::all()->toArray();
+		return view('clients.create', ['clients' => $clients]);
 	}
 
 	public function editindex(Request $request, $id)
@@ -49,7 +50,7 @@ class ClientsController extends Controller
 	public function edit(Request $request, $id)
 	{
 		$this->db_edit($id, $request['local'], $request['address'], $request['province'], $request['postal']);
-		return redirect('/clients');
+		return '<script>window.close();</script>';
 	}
 
 	public function delete(Request $request, $id)
@@ -67,7 +68,8 @@ class ClientsController extends Controller
 	}
 
 	//	DATABASE CALLS
-	public function db_create($local, $address, $province, $postal){
+	public function db_create($local, $address, $province, $postal)
+	{
 		$client = new Clients;
 		$client->local = $local;
 		$client->address = $address;
@@ -78,7 +80,8 @@ class ClientsController extends Controller
 		$client->save();
 	}
 
-	public function db_edit($id, $local, $address, $province, $postal){
+	public function db_edit($id, $local, $address, $province, $postal)
+	{
 		$client = Clients::find($id);
 		$client->local = $local;
 		$client->address = $address;
@@ -88,7 +91,15 @@ class ClientsController extends Controller
 		$client->save();
 	}
 
-	public function db_search($search){
+	public function db_search($search)
+	{
 		return Clients::where('local', 'like', '%'.$search.'%')->get();
+	}
+
+	public function db_get_client($local)
+	{
+		return Clients::select('*')
+			->where('local', 'like', $local)
+			->get();
 	}
 }
