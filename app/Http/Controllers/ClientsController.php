@@ -31,7 +31,8 @@ class ClientsController extends Controller
 	//	AJAX CALLS
 	public function get(Request $request)
 	{
-		$clients['clients'] = Clients::all();
+		$clients['clients'] = $this->db_get_all();
+
 		return $clients;
 	}
 
@@ -68,6 +69,13 @@ class ClientsController extends Controller
 	}
 
 	//	DATABASE CALLS
+	public function db_get_all()
+	{
+		return Clients::select('*')
+			->orderBy('local')
+			->get();
+	}
+
 	public function db_create($local, $address, $province, $postal)
 	{
 		$client = new Clients;

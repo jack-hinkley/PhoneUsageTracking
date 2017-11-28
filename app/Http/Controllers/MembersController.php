@@ -26,6 +26,7 @@ class MembersController extends Controller
 	public function createphoneindex(Request $request, $phone)
 	{
 		$locals['locals'] = Clients::get();
+		$locals['phones'] = Members::get();
 		return view('members.create', ['locals' => $locals, 'phone' => $phone]);
 	}
 
@@ -78,6 +79,7 @@ class MembersController extends Controller
 	{
 		$phone = str_replace(' ','',$request->input('phone'));
 		$mobile = str_replace(' ','',$request->input('mobile'));
+		$local = $this->db_get_client_id($request->input('local'));
 		if($mobile == '')	$mobile = null;
 
 		$member = new Members;
@@ -90,7 +92,7 @@ class MembersController extends Controller
 		$member->province = $request->input('province');
 		$member->postal = strtoupper($request->input('postal'));
 		$member->birthday = $request->input('birthday');
-		$member->client_id = $request->input('local');
+		$member->client_id = $local;
 		$member->plan_rate = $request->input('plan_rate');
 		$member->plan_data = $request->input('plan_data');
 		$member->created_at = date('Y-m-d');
@@ -103,6 +105,7 @@ class MembersController extends Controller
 	{
 		$phone = str_replace(' ','',$request->input('phone'));
 		$mobile = str_replace(' ','',$request->input('mobile'));
+		$local = $this->db_get_client_id($request->input('local'));
 		if($mobile == '')	$mobile = null;
 
 		$member = Members::find($id);
@@ -115,7 +118,7 @@ class MembersController extends Controller
 		$member->province = $request->input('province');
 		$member->postal = strtoupper($request->input('postal'));
 		$member->birthday = $request->input('birthday');
-		$member->client_id = $request->input('local');
+		$member->client_id = $local;
 		$member->plan_rate = $request->input('plan_rate');
 		$member->plan_data = $request->input('plan_data');
 		$member->updated_at = date('Y-m-d');
@@ -158,6 +161,14 @@ class MembersController extends Controller
 		return Members::select('phone')
 			->get()
 			->toArray();
+	}
+
+	public function db_get_client_id($local)
+	{
+		return Clients::select('client_id')
+			->where('local', '=', $local)
+			->get()
+			->toArray()[0]['client_id'];
 	}
 
 }

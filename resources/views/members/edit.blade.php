@@ -101,14 +101,12 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="local">Local</label>
-							<select class="form-control" name="local" id="local">
-								<?php foreach ($locals['locals'] as $key => $local){
-									echo '<option value="'.$local->client_id.'"';
-									if($members->client_id == $local->client_id)
-										echo "selected";
-									echo '>'.$local->local.'</option>';
+							<input class="form-control" name="local" id="local" list="local-list" placeholder="Local">
+							<datalist id="local-list">
+								<?php foreach ($locals['locals'] as $key => $local) {
+									echo '<option value="'.$local->local.'">';
 								} ?>
-							</select>
+							</datalist>
 						</div>
 					</div>
 					<div class="col">

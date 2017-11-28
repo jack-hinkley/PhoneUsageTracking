@@ -139,8 +139,6 @@ class phoneplanController extends Controller
 						foreach ($row as $key => $cell) {
 							//	Check cell name against the blacklisted cell names
 							if($this->upload_blacklist($key)){
-								//	Check if the column exists, if it does create the column
-								// $this->db_check_column($key, 'zones_'.$zone);
 								if($key == 'invoice_date')
 									$cell = substr((string)$cell, 0, 10);
 								//	Push cell data in row array
@@ -509,6 +507,7 @@ class phoneplanController extends Controller
 		$data_master = array();
 		$locals = array();
 
+		//	Iterate the dataset, get every member in the local and store the name and total allowed data
 		foreach ($data_set as $key => $value) {
 			$local = $this->db_get_local_by_phone($value['mobile_number'])->toArray();
 			if(isset($local[0]['local'])) {
@@ -519,7 +518,10 @@ class phoneplanController extends Controller
 
 		//	Iterate through invoices and collect total usage and total allowed usage, store in locals array
 		foreach ($data_set as $key => $value) {
+			//	Make sure local exists
 			if(isset($value['local'])) {
+				//	If no data has been inserted for the local, add the data. 
+				//	If data exists, add to the value found (To get accumulated usage based on a local)
 				if(isset($locals[$value['local']])) {
 					$locals[$value['local']]['allowed_usage'] = $locals[$value['local']]['allowed_usage'] + $value['plan_data'];
 					$locals[$value['local']]['total_usage'] = $locals[$value['local']]['total_usage'] + $value['total_domestic_data_mb'];
@@ -565,6 +567,7 @@ class phoneplanController extends Controller
 	public function upload_data($data_set, $zone)
 	{
 		$data_master = array();
+		//	Depending on the spreadsheet, set where the data starts using the global variables
 		if ($zone == 'usage') $start = $this->usage_start;
 		else $start = $this->cost_start;
 		foreach ($data_set as $data) {
@@ -589,15 +592,18 @@ class phoneplanController extends Controller
 	//	Return:		None
 	public function upload_zones($data_set, $zone)
 	{
+		//	Depending on the spreadsheet, set where the data starts using the global variables
 		if ($zone == 'usage') $start = $this->usage_start;
 		else $start = $this->cost_start;
-		foreach ($data_set as $data) {
+		foreach ($data_set as $column => $data) {
 			$data_array = array();
 			$date = $data['invoice_date'];
 			$phone = $data['mobile_number'];
 			$count = 0;
 			foreach ($data as $key => $val) {
 				if($count >= $start && $val != 0) {
+					//	Check if the column exists, if it does create the column
+					$this->db_check_column($column, 'zones_'.$zone);
 					$data_row = [
 						'invoice_date' => $date,
 						'phone' => $phone,

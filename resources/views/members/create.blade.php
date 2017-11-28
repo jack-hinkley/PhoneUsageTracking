@@ -102,11 +102,14 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="local">Local</label>
-							<select class="form-control" name="local" id="local">
-								<?php foreach ($locals['locals'] as $key => $local){
-									echo '<option value="'.$local['client_id'].'">'.$local->local.'</option>';
-								} ?>
-							</select>
+							<div class="input-group">
+								<input class="form-control" name="local" id="local" list="local-list" placeholder="Local">
+								<datalist id="local-list">
+									<?php foreach ($locals['locals'] as $key => $local) {
+										echo '<option value="'.$local->local.'">';
+									} ?>
+								</datalist>
+							</div>
 						</div>
 					</div>
 					<div class="col">
@@ -138,9 +141,8 @@
 		var phone = $('#phone').val().replace(/ /g,'');
 		var result = true;
 		validate = ["<?php
-			foreach ($locals['phones'] as $key => $value) {
+			foreach ($locals['phones'] as $key => $value)
 				echo $value['phone'].'", "';
-			}
 			?>"];
 		$.each(validate, function(key, val){
 			if(val == phone) result = false;

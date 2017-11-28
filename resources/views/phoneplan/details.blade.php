@@ -15,8 +15,8 @@
 								<input name="name" class="form-control info" value="{{ $invoice['invoices']->first_name }} {{ $invoice['invoices']->last_name }}" disabled="true">
 							</div>
 							<div class="form-group col-md-6">
-								<label for="name">Phone Number</label>
-								<input name="name" class="form-control info" value="<?php 
+								<label for="phone">Phone Number</label>
+								<input name="phone" class="form-control info" value="<?php 
 									preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $invoice['invoices']->phone, $matches);
 									$phone = $matches[1].' '.$matches[2].' '.$matches[3]; 
 									echo $phone;
@@ -28,24 +28,24 @@
 								<input name="name" class="form-control info" value="{{ $invoice['invoices']->address }}, {{ $invoice['invoices']->province }}, {{ $invoice['invoices']->postal }}" disabled="true">
 							</div>
 							<div class="form-group col-md-6">
-								<label for="name">Local/Home</label>
-								<input name="name" class="form-control info" value="{{ $invoice['invoices']->local }}" disabled="true">
+								<label for="local">Local/Home</label>
+								<input name="local" class="form-control info" value="{{ $invoice['invoices']->local }}" disabled="true">
 							</div>
 
 							<div class="form-group col-md-4">
-								<label for="name">Date</label>
-								<input name="name" class="form-control info" value="{{ $invoice['invoices']->invoice_date }}" disabled="true">
+								<label for="invoice_date">Date</label>
+								<input name="invoice_date" class="form-control info" value="{{ $invoice['invoices']->invoice_date }}" disabled="true">
 							</div>
 							<div class="form-group col-md-4 info">
-								<label for="name">Data Plan</label>
-								<select name="name" class="form-control">
+								<label for="plan_data">Data Plan</label>
+								<select name="plan_data" id="plan_data" class="form-control">
 									<option>3072 MB</option>
 									<option>6144 MB</option>
 								</select>
 							</div>
 							<div class="form-group col-md-4 info">
-								<label for="name">Total Data Usage</label>
-								<input name="name" class="form-control" value="{{ $invoice['invoices']->total_data }} MB" disabled="true">
+								<label for="total_data_usage">Total Data Usage</label>
+								<input name="total_data_usage" class="form-control" value="{{ $invoice['invoices']->total_data }} MB" disabled="true">
 							</div>
 						</div>
 						<br>
@@ -141,6 +141,12 @@
 		$('title').text('invoice_{{ sprintf("%06d",intval($invoice['invoices']->invoice_id)) }}');
 		window.print();
 		$('title').text('USI CRM');
+	});
+
+	$.each($('#plan_data option'), function(key, val){
+		data_plan = $(val).val().substring(0, $(val).val().length-3);
+		if(data_plan == '<?php echo $invoice['invoices']->plan_data?>')
+			$(val).attr('selected', 'selected');
 	});
 	
 </script>

@@ -24,9 +24,8 @@
 	function bind(token){
 		//	Listener for when the user presses enter
 		$('#search-input').keypress(function(e){
-			if(e.which == 13){
+			if(e.which == 13)
 				$('#search-button').click();
-			}
 		});
 
 		//	Change data based on query in search bar
@@ -53,13 +52,33 @@
 					$('.data-container').append(
 						`<div class="card hidden">
 							<div class="card-header">${val['local']}
-								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
+								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['client_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="clients/edit/${val['client_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
 									<div class="row">
 										<div class="col"><i class="fa fa-map-marker"></i>&nbsp&nbsp${val['address']}, ${val['province']}, ${val['postal']}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="modal fade" id="deleteModal_${val['client_id']}" tabindex="-1" role="dialog">
+							<div class="modal-dialog" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title">Delete Client</h5>
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<span aria-hidden="true">&times;</span>
+										</button>
+									</div>
+									<div class="modal-body">
+										Are you sure you want to delete ${val['local']}
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+										<a href="clients/delete/${val['client_id']}" class="btn btn-danger">Delete</a>
 									</div>
 								</div>
 							</div>
@@ -95,13 +114,33 @@
 					$('.data-container').append(
 						`<div class="card hidden">
 							<div class="card-header">${val['local']}
-								<a href="clients/delete/${val['client_id']}" class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash"></i>&nbsp Delete</a>
+								<a href="#" class="btn btn-danger btn-sm pull-right" data-toggle="modal" data-target="#deleteModal_${val['client_id']}"><i class="fa fa-trash"></i>&nbsp Delete</a>
 								<a href="clients/edit/${val['client_id']}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a>
 							</div>
 							<div class="card-body">
 								<div class="col-sm-12">
 									<div class="row">
 										<div class="col"><i class="fa fa-map-marker"></i>&nbsp&nbsp${val['address']}, ${val['province']}, ${val['postal']}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="modal fade" id="deleteModal_${val['client_id']}" tabindex="-1" role="dialog">
+							<div class="modal-dialog" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title">Delete Client</h5>
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<span aria-hidden="true">&times;</span>
+										</button>
+									</div>
+									<div class="modal-body">
+										Are you sure you want to delete ${val['local']}
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+										<a href="clients/delete/${val['client_id']}" class="btn btn-danger">Delete</a>
 									</div>
 								</div>
 							</div>
@@ -125,7 +164,7 @@
 	function generate_search(data, token){
 		var html;
 		$.each(data['clients'], function(key, val){ 
-			html += `<option value="${val['local']}">${val['local']}</option>`; 
+			html += `<option value="${val['local']}">${val['local']}</option>`;
 		});
 		$('.data-container').before(
 			`<div class="form-group">
