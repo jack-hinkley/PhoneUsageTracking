@@ -14,7 +14,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="local">Local</label>
-							<input name="local" class="form-control" id="local" placeholder="Local" value="{{$clients->local}}" required>
+							<input name="local" class="form-control" id="local" placeholder="Local" value="{{$clients['client']->local}}" required>
 						</div>
 					</div>
 					<div class="col">
@@ -43,20 +43,44 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="address">Address</label>
-							<input name="address" class="form-control" id="address" placeholder="Address" value="{{$clients->address}}">
+							<input name="address" class="form-control" id="address" placeholder="Address" value="{{$clients['client']->address}}">
 						</div>
 					</div>
 					<div class="col">
 						<div class="form-group">
 							<label for="postal">Postal Code</label>
-							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="{{$clients->postal}}">
+							<input name="postal" class="form-control" id="postal" placeholder="Postal Code" value="{{$clients['client']->postal}}">
 						</div>
 					</div>
 				</div>
 				<input type="submit" class="btn btn-primary" value="Update">
 			</div>
 		</form>
-		<div class="data-container"></div>
+		<hr>
+		<ul class="list-group">
+			@foreach ($clients['members'] as $member)
+				<li class="list-group-item">
+					<div class="row">
+						<div class="col-md-10">
+							<div class="row">
+								<span class="col">{{ $member->first_name }} {{ $member->last_name }}</span>	
+								<span class="col"><?php 
+									preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $member->phone, $matches);
+										$phone = $matches[1].' '.$matches[2].' '.$matches[3];
+										echo $phone;
+									?>
+								</span>
+							</div>
+						</div>
+						<div class="col-md-2">
+							<span class="col pull-right"><a href="/members/edit/{{$member->member_id}}" target="_blank" class="btn btn-info btn-sm pull-right"><i class="fa fa-pencil"></i>&nbsp Edit</a></span>
+						</div>
+					</div>					
+				</li>
+			@endforeach
+		</ul> 
+		
+
 	</div>
 </div>
 <script type="text/javascript">
@@ -65,10 +89,9 @@
 		$('form').attr('action', '/clients/edit/'+id);
 
 		$.each($('#province option'), function(key, val){
-			if($(val).val() == '{{$clients->province}}')
+			if($(val).val() == '{{$clients['client']->province}}')
 				$(val).attr('selected', 'selected');
 		});
-	});
-	
+	});	
 </script>
 @endsection

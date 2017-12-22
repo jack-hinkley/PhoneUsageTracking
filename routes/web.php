@@ -19,7 +19,10 @@ Route::get('logout', 'Auth\LoginController@logout');
 Route::group(['middleware' => ['auth']], function() {
 	//	USER ROUTES
 	Route::get('phoneplan', 'PhoneplanController@index');
+	Route::get('phoneplan/delete/{date}', 'PhoneplanController@delete');
+	Route::get('phoneplan/homes', 'PhoneplanController@homesindex');
 	Route::get('phoneplan/outstanding', 'PhoneplanController@outstandingindex');
+	Route::get('phoneplan/weekly', 'PhoneplanController@weeklyindex');
 	Route::get('phoneplan/details/{id}', 'PhoneplanController@detailsindex');
 	Route::get('phoneplan/download/{date}/{local}', 'PhoneplanController@download');
 	Route::get('phoneplan/downloadsearch/{search}', 'PhoneplanController@downloadsearch');
@@ -39,8 +42,11 @@ Route::group(['middleware' => ['auth']], function() {
 
 	// AJAX CALLS
 	Route::post('phoneplan/get', 'PhoneplanController@get');
+	Route::post('phoneplan/gethomes', 'PhoneplanController@gethomes');
+	Route::post('phoneplan/getweekly', 'PhoneplanController@getweekly');
 	Route::post('phoneplan/search', 'PhoneplanController@search');
 	Route::post('phoneplan/upload', 'PhoneplanController@upload');
+	Route::post('phoneplan/uploadweekly', 'PhoneplanController@uploadweekly');
 	Route::post('phoneplan/search/{query}', 'PhoneplanController@search');
 
 	Route::post('clients/get', 'ClientsController@get');

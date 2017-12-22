@@ -10,9 +10,10 @@
 		</div><hr class="d-print-none">
 		<?php 
 			if(sizeof($phoneplan['outstanding']) > 0){
-				echo '<a href="phoneplan/outstanding" class="btn btn-danger pull-right  d-print-none">'.sizeof($phoneplan['outstanding']).' Outstanding Numbers</a><br>';
+				echo '<a href="phoneplan/outstanding" class="btn btn-danger pull-right d-print-none">'.sizeof($phoneplan['outstanding']).' Outstanding Numbers</a><br>';
 			}
 		 ?>
+		<!-- <button class="btn btn-danger pull-right d-print-none" data-toggle="modal" data-target="#deleteModal">Delete Recent Month</button> -->
 		<div class="form-group d-print-none">
 			<label for="date-selector">Date</label>	
 			<select class="form-control" id="date-selector">
@@ -65,6 +66,30 @@
 			</div>
 		</div>
 	</div>
+
+	<div class="modal fade" id="deleteModal">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<form action="phoneplan/delete/{{ $phoneplan['dates'][0]->invoice_date }}" method="POST" enctype="multipart/form-data">
+				{{ csrf_field() }}
+					<div class="modal-header">
+						<h5 class="modal-title">Delete Recent Month</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to delete all invoices from {{ $phoneplan['dates'][0]->invoice_date }} ?
+					</div>
+					<div class="modal-footer">
+						<button type="submit" class="btn btn-danger">Delete</button>
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
 </div>
 
 <script type="text/javascript">

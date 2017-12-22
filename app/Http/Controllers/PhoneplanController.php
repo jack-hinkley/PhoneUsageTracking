@@ -12,6 +12,7 @@ use App\Data_usage;
 use App\Data_cost;
 use App\Zones_usage;
 use App\Zones_cost;
+use App\Weekly_usage;
 use App\Http\Controllers\Controller;
 use Excel;
 use PDF;
@@ -37,6 +38,12 @@ class phoneplanController extends Controller
 		return view('phoneplan.outstanding', ['outstanding' => $invoices]);
 	}
 
+	public function weeklyindex()
+	{
+		$dates = $this->db_get_weekly_usage_dates(); 
+		return view('phoneplan.weekly', ['dates' => $dates]);
+	}
+
 	public function detailsindex(Request $request, $id)
 	{
 		$invoices['invoices'] = $this->db_get_id($id)[0];
@@ -51,11 +58,47 @@ class phoneplanController extends Controller
 		return view('phoneplan.details', ['invoice' => $invoices]);
 	}
 
+	public function delete(Request $request, $date)
+	{
+		echo 'hello';
+		die;
+		$this->index();
+		// $this->db_clear_invoices($date);
+	}
+
+	public function homesindex()
+	{
+		$invoices['dates'] = $this->db_dates();
+		return view('phoneplan.homegroups', ['invoice' => $invoices]);
+	}
+
 	public function testing()
 	{
-		// $this->db_all_cost('6473906782', '2016-09-11');
-		// $this->db_all_usage('6473906782', '2016-09-11');
-		// $this->test($this->db_check_column('this_is_a_test', 'zones_usage'));
+		//	PUT ALL OUSTANDING NUMBERS INTO CANCELLED
+			
+		// $out = $this->db_outstanding()->toArray();
+		// $data = array();
+		// foreach ($out as $key => $value) {
+		// 	$arr = [
+		// 		'first_name' => 'Cancelled',
+		// 		'last_name' => 'Cancelled',
+		// 		'phone' => $value['phone'],
+		// 		'client_id' => 584,
+		// 		'plan_data' => 0,
+		// 		'plan_rate' => 0
+		// 	];
+		// 	array_push($data, $arr);
+		// }
+		// Members::insert($data);
+
+		// DELETE EXTRA CLIENTS
+		
+		// $clients = Clients::select('*')
+		// 	->leftjoin('members', 'clients.client_id', '=', 'members.client_id')
+		// 	->where('members.client_id', '=', NULL)
+		// 	->delete();
+		// Clients::delete();
+		return view('home');
 	}
 
 	//	AJAX CALLS
@@ -158,6 +201,55 @@ class phoneplanController extends Controller
 				return back();
 			}
 		}
+	}
+
+	public function uploadweekly(Request $request)
+	{
+		if($request->file('imported-file')) {
+			$path = $request->file('imported-file')->getRealPath();
+			$data = (Excel::load($path, function($reader) {})->get())->toArray();
+			$rowcount = 0;
+			$cellcount = 0;
+			//	Handle inserts for other tables
+			$data_array = array();
+			if(!empty($data)) {
+				//	Iterate the spreadsheet by row
+				foreach ($data as $row) {
+					$rowcount++;
+					if(($rowcount % 2) == 1 || $rowcount > (sizeof($data) - 8)) continue;
+					$data_row = array();
+					if(!empty($row)) {
+						//	Iterate the row by cell
+						foreach ($row as $key => $cell) {
+							$cellcount++;
+							if($cellcount == 1)
+								$data_row['phone'] = $cell;
+							if($cellcount == 2) continue;
+							if($cellcount == 3)
+								$data_row['usage'] = $cell;
+						}
+						$data_row['date'] = date('Y-m-d');
+					}
+					$cellcount = 0;
+					// If usage is over 75% of plan, insert record into table
+					if((int)($data_row['usage'] / (int)$this->db_get_plan_rate($data_row['phone'])) > 0.75)
+						array_push($data_array, $data_row);
+				}
+				Weekly_usage::insert($data_array);
+				return back();
+			}
+		}
+	}
+
+	public function gethomes(Request $request)
+	{
+		$invoices['invoices'] = $this->db_get_homes($request['date']);
+		return $invoices;
+	}
+
+	public function getweekly(Request $request)
+	{
+		return $this->db_get_weekly_usage($request['date']);
 	}
 
 	//	DATABASE CALLS
@@ -320,7 +412,7 @@ class phoneplanController extends Controller
 
 	public function db_other_charges($phone, $date)
 	{
-		return Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges')
+		return Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges', 'data_cost.tether_domestic_data_charges')
 			->where('data_cost.phone', '=', $phone)
 			->where('data_cost.invoice_date', '=', $date)
 			->get()
@@ -329,8 +421,7 @@ class phoneplanController extends Controller
 
 	public function db_all_cost($phone, $date)
 	{
-		//	IM SORRY THERE WAS NO OTHER WAY
-		$data = Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges')
+		$data = Data_cost::select('data_cost.other_long_distance_charges', 'data_cost.canada_to_international_long_distance_charges', 'data_cost.other_charges_and_credits', 'data_cost.total_roaming_charges', 'data_cost.total_text_charges', 'data_cost.tether_domestic_data_charges', 'intl_roaming_text_charges')
 			->where('data_cost.phone', '=', $phone)
 			->where('data_cost.invoice_date', '=', $date)
 			->get()
@@ -398,12 +489,12 @@ class phoneplanController extends Controller
 		$column = DB::select('
 			SELECT * 
 			FROM information_schema.COLUMNS 
-			WHERE TABLE_SCHEMA = "test_laravel_phone_data" 
+			WHERE TABLE_SCHEMA = "laravel_phone_data" 
 			AND TABLE_NAME = "'.$table.'"
 			AND COLUMN_NAME = "'.$key.'"');
-
-		if(sizeof($column) == 0)
+		if(sizeof($column) == 0){
 			DB::select('ALTER TABLE '.$table.' ADD '.$key.' DOUBLE');
+		}
 	}
 
 	public function db_list_cost($phone, $date)
@@ -430,6 +521,57 @@ class phoneplanController extends Controller
 			->where('clients.local', '=', $local)
 			->get()
 			->toArray();
+	}
+
+	public function db_get_homes($date)
+	{
+		return Invoices::select('invoices.phone', 'invoices.invoice_id', 'invoices.local', 'invoices.invoice_total', 'members.first_name', 'members.last_name', 'members.plan_data')
+			->join('members', 'invoices.phone', '=', 'members.phone')
+			->where('invoices.invoice_date', '=', $date)
+			->where('invoices.local', 'like', 'home%')
+			->orderBy('local')
+			->get();
+	}
+
+	public function db_clear_invoices($date)
+	{
+		Data_usage::where('invoice_date', $date)->delete();
+		Data_cost::where('invoice_date', $date)->delete();
+		Zone_cost::where('invoice_date', $date)->delete();
+		Zone_usage::where('invoice_date', $date)->delete();
+		Invoices::where('invoice_date', $date)->delete();
+	}
+
+	public function db_get_weekly_usage($date)
+	{
+		return Weekly_usage::select('weekly_usage.*', 'members.first_name', 'members.last_name', 'members.plan_data')
+			->join('members', 'weekly_usage.phone', '=', 'members.phone')
+			->where('date', '=', $date)
+			->orderBy('usage', 'desc')
+			->get();
+	}
+
+	public function db_get_weekly_usage_dates()
+	{
+		return Weekly_usage::select('date')
+			->distinct()
+			->orderBy('date', 'desc')
+			->get();
+	}
+
+	public function db_get_plan_rate($phone)
+	{
+		$exists = Members::all('*')
+			->where('phone', '=', $phone);
+
+		if(sizeof($exists) > 0) {
+			return Members::select('plan_data')
+			->where('phone', '=', $phone)
+			->get()
+			->toArray()[0]['plan_data'];
+		}
+		else 
+			return 3072;
 	}
 
 	//	REUSABLE FUNCTIONS
@@ -603,7 +745,7 @@ class phoneplanController extends Controller
 			foreach ($data as $key => $val) {
 				if($count >= $start && $val != 0) {
 					//	Check if the column exists, if it does create the column
-					$this->db_check_column($column, 'zones_'.$zone);
+					$this->db_check_column($key, 'zones_'.$zone);
 					$data_row = [
 						'invoice_date' => $date,
 						'phone' => $phone,

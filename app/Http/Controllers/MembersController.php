@@ -33,7 +33,7 @@ class MembersController extends Controller
 	public function editindex(Request $request, $id)
 	{
 		$locals['locals'] = Clients::get();
-		$members = Members::where('member_id', '=', $id)->get()[0];
+		$members = $this->db_get_client($id);
 		return view('members.edit', ['locals' => $locals, 'members' => $members]);
 	}
 
@@ -169,6 +169,13 @@ class MembersController extends Controller
 			->where('local', '=', $local)
 			->get()
 			->toArray()[0]['client_id'];
+	}
+
+	public function db_get_client($id)
+	{
+		return Members::where('member_id', '=', $id)
+			->join('clients', 'members.client_id', '=', 'clients.client_id')
+			->get()[0];
 	}
 
 }

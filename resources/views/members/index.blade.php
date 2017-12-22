@@ -9,7 +9,7 @@
 		<div class="form-group">
 			<label for="local-selector">Local</label>	
 			<select class="form-control" id="local-selector">
-				<?php foreach ($locals['locals'] as $key => $local){
+				<?php foreach ($locals['locals'] as $key => $local) {
 					echo '<option value="">'.$local->local.'</option>';
 				} ?>
 			</select>

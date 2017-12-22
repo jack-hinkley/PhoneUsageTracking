@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Clients;
+use App\Members;
 use App\Http\Controllers\Controller;
 
 class ClientsController extends Controller
@@ -24,7 +25,8 @@ class ClientsController extends Controller
 
 	public function editindex(Request $request, $id)
 	{
-		$clients = Clients::where('client_id', '=', $id)->get()[0];
+		$clients['client'] = $this->db_get_by_id($id);
+		$clients['members'] = $this->db_get_members($id);
 		return view('clients.edit', ['clients' => $clients]);
 	}
 
@@ -102,6 +104,20 @@ class ClientsController extends Controller
 	public function db_search($search)
 	{
 		return Clients::where('local', 'like', '%'.$search.'%')->get();
+	}
+
+	public function db_get_by_id($id)
+	{
+		return Clients::where('client_id', '=', $id)
+			->get()[0];
+	}
+
+	public function db_get_members($id)
+	{
+		return Members::select('members.first_name', 'members.last_name', 'members.phone', 'members.member_id')
+			->where('members.client_id', '=', $id)
+			->orderBy('members.first_name')
+			->get();
 	}
 
 	public function db_get_client($local)

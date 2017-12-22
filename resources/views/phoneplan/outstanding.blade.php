@@ -10,7 +10,7 @@
 							foreach($outstanding['outstanding'] as $key => $out){
 								preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $out->phone,  $matches );
 								$phone = $matches[1].' '.$matches[2].' '.$matches[3];
-								echo '<li class="list-group-item">'.$phone.'<a href="/members/create/'.$out->phone.'"class="btn btn-sm btn-success pull-right"><i class="fa fa-plus"></i>&nbspAdd Member</a></li>';
+								echo '<li class="list-group-item">'.$phone.'<a href="/members/create/'.$out->phone.'"class="btn btn-sm btn-success d-print-none pull-right"><i class="fa fa-plus"></i>&nbspAdd Member</a></li>';
 							}	
 							?>
 						</ul>

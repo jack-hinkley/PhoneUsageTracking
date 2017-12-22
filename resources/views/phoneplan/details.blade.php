@@ -52,7 +52,7 @@
 						<h3>COST BREAKDOWN</h3>
 						<div class="row">
 							@foreach ($invoice['data_cost'] as $key => $val)
-								<?php if($val < 1) continue; ?>
+								<?php if($val < 0.01) continue; ?>
 								<div class="col-md-6">
 									<div class="row">
 										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
@@ -61,7 +61,7 @@
 								</div>
 							@endforeach
 							@foreach ($invoice['list_cost'] as $key => $val)
-								<?php if($val < 1) continue; ?>
+								<?php if($val < 0.01) continue; ?>
 								<div class="col-md-6">
 									<div class="row">
 										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
@@ -70,7 +70,7 @@
 								</div>
 							@endforeach
 							@foreach ($invoice['other_cost'] as $key => $val)
-								<?php if($val < 1) continue; ?>
+								<?php if($val < 0.01 || strpos('_'.$key, 'total')) continue; ?>
 								<div class="col-md-6">
 									<div class="row">
 										<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
@@ -84,7 +84,7 @@
 						<div class="row">
 							@foreach ($invoice['data_usage'] as $usage)
 								@foreach ($usage->toArray() as $key => $val)
-									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone' || $val < 1) continue; ?>
+									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone' || $val < 0.01) continue; ?>
 									<div class="col-md-6">
 										<div class="row">
 											<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>
@@ -105,7 +105,7 @@
 						<div class="row">
 							@foreach ($invoice['zone_usage'] as $usage)
 								@foreach ($usage->toArray() as $key => $val)
-									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone' || $val < 1) continue; ?>
+									<?php if($key == 'id' || $key == 'invoice_date' || $key == 'phone' || $val < 0.01) continue; ?>
 									<div class="col-md-6">
 										<div class="row">
 											<div class="col-md-8">{{ str_replace('_', ' ', ucfirst($key)) }}</div>

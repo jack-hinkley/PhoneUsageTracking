@@ -50,7 +50,7 @@
 									preg_match( '/^(\d{3})(\d{3})(\d{4})$/', $members->mobile,  $matches );
 									$phone = $matches[1].' '.$matches[2].' '.$matches[3];
 									echo $phone;
-								}								
+								}	
 							?>" placeholder="Mobile">
 						</div>
 					</div>
@@ -101,7 +101,7 @@
 					<div class="col">
 						<div class="form-group">
 							<label for="local">Local</label>
-							<input class="form-control" name="local" id="local" list="local-list" placeholder="Local">
+							<input class="form-control" name="local" id="local" list="local-list" placeholder="Local" value="{{ $members->local }}">
 							<datalist id="local-list">
 								<?php foreach ($locals['locals'] as $key => $local) {
 									echo '<option value="'.$local->local.'">';
